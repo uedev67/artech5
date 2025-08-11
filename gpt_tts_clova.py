@@ -6,8 +6,11 @@ import argparse
 import requests
 import numpy as np
 import soundfile as sf
+from typing import Optional
+
 
 CLOVA_TTS_URL = "https://naveropenapi.apigw.ntruss.com/tts-premium/v1/tts"
+
 
 AGE_GENDER_SPEAKERS = {
     "소년": ["nhajun", "nwoof"],
@@ -24,11 +27,22 @@ def _env(var: str, default: str = "") -> str:
         raise RuntimeError(f"환경변수 {var} 가 비어 있습니다.")
     return v
 
-def request_clova_tts(text: str, speaker: str, format_: str = "wav", speed: int = 0, pitch: int = 0, volume: int = 0, emotion: str | None = None, style: str | None = None) -> bytes:
-    client_id = _env("NCP_CLOVA_TTS_CLIENT_ID") 
-    client_secret = _env("NCP_CLOVA_TTS_CLIENT_SECRET")
+
+# 음성 파라미터는 여기서 설정
+def request_clova_tts(
+    text: str, speaker: str,
+    format_: str = "wav",
+    speed: int = 0,
+    pitch: int = 0,
+    volume: int = 0,
+    emotion: Optional[str] = None,
+    style: Optional[str] = None
+) -> bytes:
+    
+    client_id = _env("NCP_CLOVA_TTS_CLIENT_ID")  # 환경 변수에 미리 입력
+    client_secret = _env("NCP_CLOVA_TTS_CLIENT_SECRET")  # 환경 변수에 미리 입력
     headers = {
-        "X-NCP-APIGW-API-KEY-ID": client_id,
+        "X-NCP-APIGW-API-KEY-ID": client_id,  # 여긴 건드리지 않기
         "X-NCP-APIGW-API-KEY": client_secret,
     }
     data = {
@@ -48,6 +62,8 @@ def request_clova_tts(text: str, speaker: str, format_: str = "wav", speed: int 
         raise RuntimeError(f"[CLOVA TTS] HTTP {resp.status_code} / body={resp.text}")
     return resp.content
 
+
+# 오디오 변환 함수
 def ensure_wav_16k(audio_bytes: bytes, input_format: str) -> bytes:
     audio_buf = io.BytesIO(audio_bytes)
     try:
@@ -75,16 +91,30 @@ def ensure_wav_16k(audio_bytes: bytes, input_format: str) -> bytes:
     return out_buf.getvalue()
 
 
-def synthesize_to_file(text: str, out_path: str, speaker: str, speed: int = 0, pitch: int = 0, volume: int = 0, emotion: str | None = None, style: str | None = None, force_16k_wav: bool = True):
+# 받은 값을 tts에 넘겨주는 함수
+def synthesize_to_file(
+    text: str,
+    out_path: str,
+    speaker: str,
+    speed: int = 0,
+    pitch: int = 0,
+    volume: int = 0,
+    emotion: Optional[str] = None,
+    style: Optional[str] = None,
+    force_16k_wav: bool = True
+):
+    # 파라미터값을 받아서
     raw = request_clova_tts(text=text, speaker=speaker, format_="wav", speed=speed, pitch=pitch, volume=volume, emotion=emotion, style=style)
     if force_16k_wav:
+        # 16k로 변환
         raw = ensure_wav_16k(raw, input_format="wav")
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
     with open(out_path, "wb") as f:
         f.write(raw)
-    return out_path
+    return out_path  # 저장된 파일 경로를 반환
 
 
+# 실행 함수
 def main():
     age_gender = input("나이대 및 성별을 입력하세요 (소년/소녀/청년남성/청년여성/중년남성/중년여성): ").strip()
     speakers = AGE_GENDER_SPEAKERS.get(age_gender)
@@ -105,7 +135,9 @@ def main():
     parser.add_argument("--style", default=None)
     parser.add_argument("--no-force-16k", action="store_true")
     args = parser.parse_args()
-    out_path = r"C:\ARTECH_3\Image_Box\image2\voice\output.wav"
+    out_path = r"C:\Artech5\Image_Box\Image2\voice\voice.wav"
+    
+    # 음성 합성 및 저장함수 호출
     path = synthesize_to_file(text=text, out_path=out_path, speaker=speaker, speed=args.speed, pitch=args.pitch, volume=args.volume, emotion=args.emotion, style=args.style, force_16k_wav=not args.no_force_16k)
     print(f"[OK] 저장 완료: {path}")
 

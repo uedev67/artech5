@@ -1,34 +1,41 @@
-import socket, json
 
-HOST = "0.0.0.0"   # 모든 인터페이스에서 수신
-PORT = 50555
+from flask import Flask, request
 
-def run_server():
-    print(f"[SERVER] Listening on {HOST}:{PORT}")
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as srv:
-        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        srv.bind((HOST, PORT))
-        srv.listen(5)
-        while True:
-            conn, addr = srv.accept()
-            with conn:
-                print(f"[SERVER] Connected from {addr}")
-                buf = b""
-                # 클라이언트가 한 줄(JSON + \n) 보내고 종료
-                while True:
-                    chunk = conn.recv(4096)
-                    if not chunk:
-                        break
-                    buf += chunk
-                    # 줄단위 프로토콜
-                    if b"\n" in buf:
-                        line, _, rest = buf.partition(b"\n")
-                        buf = rest
-                        try:
-                            data = json.loads(line.decode("utf-8"))
-                            print("[RECV]", data)
-                        except Exception as e:
-                            print("[ERROR] Bad JSON:", e)
+def run_survey_server(host="0.0.0.0", port=5000):
+    """
+    설문 결과를 한 번 수신하면 해당 결과를 반환하고 서버를 종료합니다.
+    """
+    from threading import Event
+    app = Flask(__name__)
+    result_holder = {'data': None}
+    done_event = Event()
 
-if __name__ == "__main__":
-    run_server()
+    @app.route("/survey", methods=["POST"])
+    def survey():
+        data = request.json
+        #print(f"[SERVER] 설문 결과 수신: {data}")
+        result_holder['data'] = data
+        # 응답을 먼저 보내고, 서버 종료 신호는 약간 지연시킴
+        from threading import Timer
+        def delayed_set():
+            done_event.set()
+        Timer(0.5, delayed_set).start()  # 0.5초 후 서버 종료 신호
+        return "OK", 200
+
+    # Flask 서버를 별도 스레드에서 실행
+    from threading import Thread
+    def run():
+        app.run(host=host, port=port)
+
+    server_thread = Thread(target=run, daemon=True)
+    server_thread.start()
+
+    # 설문 결과가 올 때까지 대기
+    done_event.wait()
+
+
+    # 서버 종료 코드 제거: 설문 결과 반환 후 프로그램이 계속 실행됨
+    # import os, signal
+    # os.kill(os.getpid(), signal.SIGINT)
+
+    return result_holder['data']

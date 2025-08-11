@@ -1,3 +1,9 @@
+# 외부에서 호출 가능한 button 함수
+def button(survey_age: int, port: str = "COM3", baud: int = 9600, timeout: int | None = None):
+    """
+    설문 나이(survey_age)를 받아 아두이노 버튼 입력을 처리하고, 선택된 target_age를 반환.
+    """
+    return run_flow(survey_age=survey_age, port=port, baud=baud, timeout=timeout)
 import serial
 import time
 

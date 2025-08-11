@@ -94,52 +94,72 @@ def main(args):
         shutil.rmtree(save_dir)
 
     
-if __name__ == '__main__':
 
-    parser = ArgumentParser()  
-    parser.add_argument("--driven_audio", default=r"C:\ARTECH_3\Image_Box\image2\bus_chinese_mono_16k.wav", help="path to driven audio")
-    parser.add_argument("--source_image", default=r"C:\ARTECH_3\Image_Box\image2\image_age_65.jpg", help="path to source image")
-    parser.add_argument("--ref_eyeblink", default=None, help="path to reference video providing eye blinking")
-    parser.add_argument("--ref_pose", default=None, help="path to reference video providing pose")
-    parser.add_argument("--checkpoint_dir", default='./checkpoints', help="path to output")
-    parser.add_argument("--result_dir", default='./results', help="path to output")
-    parser.add_argument("--pose_style", type=int, default=0,  help="input pose style from [0, 46)")
-    parser.add_argument("--batch_size", type=int, default=3,  help="the batch size of facerender")
-    parser.add_argument("--size", type=int, default=256,  help="the image size of the facerender")
-    parser.add_argument("--expression_scale", type=float, default=1.,  help="the batch size of facerender")
-    parser.add_argument('--input_yaw', nargs='+', type=int, default=None, help="the input yaw degree of the user ")
-    parser.add_argument('--input_pitch', nargs='+', type=int, default=None, help="the input pitch degree of the user")
-    parser.add_argument('--input_roll', nargs='+', type=int, default=None, help="the input roll degree of the user")
-    parser.add_argument('--enhancer',  type=str, default=None, help="Face enhancer, [gfpgan, RestoreFormer]")
-    parser.add_argument('--background_enhancer',  type=str, default=None, help="background enhancer, [realesrgan]")
-    parser.add_argument("--cpu", dest="cpu", action="store_true") 
-    parser.add_argument("--face3dvis", action="store_true", help="generate 3d face and 3d landmarks") 
-    parser.add_argument("--still", action="store_true", help="can crop back to the original videos for the full body aniamtion") 
-    parser.add_argument("--preprocess", default='crop', choices=['crop', 'extcrop', 'resize', 'full', 'extfull'], help="how to preprocess the images" ) 
-    parser.add_argument("--verbose",action="store_true", help="saving the intermedia output or not" ) 
-    parser.add_argument("--old_version",action="store_true", help="use the pth other than safetensor version" ) 
-
-
-    # net structure and parameters
-    parser.add_argument('--net_recon', type=str, default='resnet50', choices=['resnet18', 'resnet34', 'resnet50'], help='useless')
-    parser.add_argument('--init_path', type=str, default=None, help='Useless')
-    parser.add_argument('--use_last_fc',default=False, help='zero initialize the last fc')
-    parser.add_argument('--bfm_folder', type=str, default='./checkpoints/BFM_Fitting/')
-    parser.add_argument('--bfm_model', type=str, default='BFM_model_front.mat', help='bfm model')
-
-    # default renderer parameters
-    parser.add_argument('--focal', type=float, default=1015.)
-    parser.add_argument('--center', type=float, default=112.)
-    parser.add_argument('--camera_d', type=float, default=10.)
-    parser.add_argument('--z_near', type=float, default=5.)
-    parser.add_argument('--z_far', type=float, default=15.)
-
-    args = parser.parse_args()
-
+# 외부에서 사용할 수 있는 run_sadtalker 함수
+def run_sadtalker(face_path, audio_path,
+                 checkpoint_dir=r"C:\Artech5\0.Main\checkpoints",
+                 result_dir=r"C:\Artech5\Image_Box\Image3",
+                 pose_style=0, batch_size=7, size=512, expression_scale=1.0,
+                 input_yaw=None, input_pitch=None, input_roll=None,
+                 enhancer=None, background_enhancer=None,
+                 cpu=False, face3dvis=False, still=False, preprocess='crop',
+                 verbose=False, old_version=False):
+    """
+    face_path: 변환된 얼굴 이미지 경로 (ex: face2)
+    audio_path: 음성 파일 경로 (ex: first_voice)
+    return: 생성된 talking video mp4 경로 (성공 시), 실패 시 None
+    """
+    class Args:
+        pass
+    args = Args()
+    args.driven_audio = audio_path
+    args.source_image = face_path
+    args.ref_eyeblink = None
+    args.ref_pose = None
+    args.checkpoint_dir = checkpoint_dir
+    args.result_dir = result_dir
+    args.pose_style = pose_style
+    args.batch_size = batch_size
+    args.size = size
+    args.expression_scale = expression_scale
+    args.input_yaw = input_yaw
+    args.input_pitch = input_pitch
+    args.input_roll = input_roll
+    args.enhancer = enhancer
+    args.background_enhancer = background_enhancer
+    args.cpu = cpu
+    args.face3dvis = face3dvis
+    args.still = still
+    args.preprocess = preprocess
+    args.verbose = verbose
+    args.old_version = old_version
+    args.net_recon = 'resnet50'
+    args.init_path = None
+    args.use_last_fc = False
+    args.bfm_folder = './checkpoints/BFM_Fitting/'
+    args.bfm_model = 'BFM_model_front.mat'
+    args.focal = 1015.
+    args.center = 112.
+    args.camera_d = 10.
+    args.z_near = 5.
+    args.z_far = 15.
     if torch.cuda.is_available() and not args.cpu:
         args.device = "cuda"
     else:
         args.device = "cpu"
-
-    main(args)
+    try:
+        main(args)
+        # 결과 mp4 파일 경로 추정
+        from time import strftime
+        save_dir = os.path.join(result_dir, strftime("%Y_%m_%d_%H.%M.%S"))
+        video_path = save_dir + '.mp4'
+        if os.path.exists(video_path):
+            return video_path
+        else:
+            # 혹시라도 이름이 다를 경우, 가장 최근 mp4 반환
+            mp4s = sorted(glob(os.path.join(result_dir, '*.mp4')), key=os.path.getmtime, reverse=True)
+            return mp4s[0] if mp4s else None
+    except Exception as e:
+        print(f"[ERROR] SadTalker 실행 실패: {e}")
+        return None
 
