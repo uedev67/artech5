@@ -8,6 +8,8 @@ from get_first_voice import get_first_voice
 from veo3 import play_veo3
 from sam import run_sam
 from sadtalker import run_sadtalker
+from gpt import ask_gpt
+from gpt_stt import gpt_listen
 
 
 
@@ -107,11 +109,22 @@ if __name__ == "__main__":
     
     # ======================== ai와 관객의 상호 대화 파트 ==================================
     
+    # 노화된 얼굴 face2는 화질이 좋으니, veo3 끝나고 잠시동안(한 2초?) 전체화면으로 보여주자.
+    # sadtalker 영상은 화질이 다소 떨어지니, 왼쪽 화면 일부에서 재생, 오른쪽 화면엔 노화된 얼굴과 테마 설명글 배치.(신원증처럼)
+
     # 이미 스레딩2에서 ai가 먼저 말을 걸었음. 
     # 관객이 ai에게 답변(마이크 활성화)
-    # ai 답변 음성 + talking_no_voice를 합친 영상을 출력
+    user_input = gpt_listen(duration=5)
+    answer = ask_gpt(user_input, theme)
+    # 클로바 tts 파일 함수화(target_age,gender,answer를 인자로 받는)하기. ex) voice = clova(target_age, gender, answer)
+    # voice + talking_no_voice를 합친 영상을 제작
+
+    # 매번 영상을 합성하지 말고, 멀티 스레딩을 써서 voice를 출력하는동안만 talking_no_voice를 재생하자.
+
+    # voice + talking_no_voice를 합친 영상을 출력
     # 관객이 다시 ai에게 답변
     # 시공간이 흔들리는 연출 + 돌아갈 시간이라며 관객에게 B1을 누르도록 유도
     
     
+
     

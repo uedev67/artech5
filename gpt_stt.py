@@ -11,9 +11,9 @@ DURATION = 5               # 기본 녹음 시간(초)
 
 # Whisper 모델 미리 로드 : 녹음과 모델 로드가 동시에 일어나면 모델 로딩(gpu자원 독점) 때문에 녹음 끊김이 발생함 + 미리 로드하면 녹음 후 모델 연산 속도가 빨라짐 
 model = whisper.load_model("medium")  # 4080에서는 medium 모델 권장
-print("✅ Whisper 모델 로드 완료")
+print(" Whisper 모델 로드 완료")
 
-
+# 녹음
 def record_audio(duration=DURATION, sample_rate=RATE):
     p = pyaudio.PyAudio()
     stream = p.open(format=FORMAT, channels=CHANNELS, rate=sample_rate,
@@ -26,7 +26,7 @@ def record_audio(duration=DURATION, sample_rate=RATE):
         data = stream.read(CHUNK, exception_on_overflow=False)  # 끊김 완화
         frames.append(data)
 
-    print("✅ 녹음 완료.")
+    print(" 녹음 완료.")
 
     stream.stop_stream()
     stream.close()
@@ -42,17 +42,22 @@ def record_audio(duration=DURATION, sample_rate=RATE):
 
     return temp_wav.name
 
-
+# 텍스트 변환
 def STT_whisper(audio_path):
-    print("📝 Whisper STT 실행 중...")
+    print(" Whisper STT 실행 중...")
     result = model.transcribe(audio_path, language="ko")
     return result["text"]
+
+# 실행 함수
+def gpt_listen(duration=DURATION):
+    audio_file_path = record_audio(duration=duration)  # 녹음 실행
+    transcribed_text = STT_whisper(audio_file_path)  # 텍스트로 변환
+    
+    return transcribed_text
 
 
 # 실행부
 if __name__ == "__main__":
-    audio_file_path = record_audio(duration=5)  # 녹음 실행
-    print(f"📂 녹음 파일 경로: {audio_file_path}")
-
-    transcribed_text = STT_whisper(audio_file_path)
-    print(f"💬 변환된 텍스트: {transcribed_text}")
+    
+    text = gpt_listen(duration=5)
+    print(f"녹음된 텍스트: {text}")
