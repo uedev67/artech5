@@ -32,6 +32,7 @@ def run_gui():
         selected1 = var1.get()
         selected2 = var2.get()
         selected3 = var3.get()
+        selected4 = var4.get()
 
         if not selected1:
             messagebox.showwarning("경고", "1번 질문에 답변해주세요.")
@@ -42,12 +43,16 @@ def run_gui():
         if not selected3:
             messagebox.showwarning("경고", "3번 질문에 답변해주세요.")
             return
+        if not selected4:
+            messagebox.showwarning("경고", "4번 질문에 답변해주세요.")
+            return
 
         # payload 구성
         result.clear()
         result["q1"] = selected1
-        result["q2"] = selected2
-        result["q3"] = selected3
+        result["gender"] = selected2
+        result["age"] = selected3
+        result["theme"] = selected4
         result["IsEnterOK"] = True
         result["meta"] = {
             "timestamp": datetime.now().isoformat(timespec="seconds"),
@@ -63,7 +68,8 @@ def run_gui():
                 "전송 완료!\n"
                 f"1번: {selected1}\n"
                 f"2번: {selected2}\n"
-                f"3번: {selected3}"
+                f"3번: {selected3}\n"
+                f"4번: {selected4}"
             )
         else:
             backup_locally(result, BACKUP_FILE)
@@ -76,10 +82,11 @@ def run_gui():
     # GUI
     root = tk.Tk()
     root.title("설문조사")
-    root.geometry("1200x700")
+    root.geometry("1200x800")
 
     label_font = ("맑은 고딕", 18)
     radio_font = ("맑은 고딕", 18)
+
 
     # 1번 (동의)
     tk.Label(
@@ -88,20 +95,33 @@ def run_gui():
         font=label_font, anchor='w', justify='left', wraplength=1100
     ).pack(pady=15, fill='x')
     var1 = tk.StringVar(value="")
+    agree_frame = tk.Frame(root)
+    agree_frame.pack(pady=5)
     for choice in ["예", "아니오"]:
-        tk.Radiobutton(root, text=choice, variable=var1, value=choice, font=radio_font).pack(anchor='w')
+        tk.Radiobutton(agree_frame, text=choice, variable=var1, value=choice, font=radio_font).pack(side='left', padx=10)
 
     # 2번 (성별)
     tk.Label(root, text="2. 당신의 성별은?", font=label_font, anchor='w', justify='left').pack(pady=15, fill='x')
     var2 = tk.StringVar(value="")
+    gender_frame = tk.Frame(root)
+    gender_frame.pack(pady=5)
     for choice in ["남자", "여자"]:
-        tk.Radiobutton(root, text=choice, variable=var2, value=choice, font=radio_font).pack(anchor='w')
+        tk.Radiobutton(gender_frame, text=choice, variable=var2, value=choice, font=radio_font).pack(side='left', padx=10)
 
-    # 3번 (미래사회 테마)
-    tk.Label(root, text="3. 당신이 생각하는 미래사회의 모습은?", font=label_font, anchor='w', justify='left').pack(pady=15, fill='x')
+
+    # 3번 (나이)
+    tk.Label(root, text="3. 당신의 현재 나이는?", font=label_font, anchor='w', justify='left').pack(pady=15, fill='x')
     var3 = tk.StringVar(value="")
+    age_frame = tk.Frame(root)
+    age_frame.pack(pady=5)
+    for choice in ["10대", "20대", "30대", "40대", "50대", "60대"]:
+        tk.Radiobutton(age_frame, text=choice, variable=var3, value=choice, font=radio_font).pack(side='left', padx=10)
+
+    # 4번 (미래사회 테마)
+    tk.Label(root, text="4. 당신이 생각하는 미래사회의 모습은?", font=label_font, anchor='w', justify='left').pack(pady=15, fill='x')
+    var4 = tk.StringVar(value="")
     for choice in ["지하벙커 생존자 커뮤니티", "사이버펑크", "에코 스마트시티", "화성 이주"]:
-        tk.Radiobutton(root, text=choice, variable=var3, value=choice, font=radio_font).pack(anchor='w')
+        tk.Radiobutton(root, text=choice, variable=var4, value=choice, font=radio_font).pack(anchor='w')
 
     tk.Button(root, text="제출", command=submit_answer, font=("맑은 고딕", 24), width=15, height=2).pack(pady=30)
 

@@ -1,10 +1,64 @@
 # 모듈 임포트
+import threading
+from queue import Queue
 from survey_client import run_survey_server
 from button import button
 from capture import capture
+from get_first_voice import get_first_voice
+from veo3 import play_veo3
 from sam import run_sam
 from sadtalker import run_sadtalker
 
+
+
+# 개별 함수 정의
+
+def samtalker(target_age, first_voice):
+    face2 = run_sam(target_age)                 # SAM
+    talking_video = run_sadtalker(face2, first_voice)  # SadTalker
+    return talking_video
+
+# 스레딩1
+def veo3_with_samtalker(theme, target_age, first_voice):
+    result_q, error_q = Queue(), Queue()
+
+    # 작업1 : veo3 영상 재생
+    def video_task():
+        try:
+            # 주의: play_veo3(theme)은 내부에서 동영상이 끝날 때까지 블로킹/루프 후
+            # 창/프로세스를 스스로 정리하고 return 해야 함 (중간 강제종료 X).
+            play_veo3(theme)
+        except Exception as e:
+            error_q.put(("video", e))
+
+    # 작업2 : SAM + SadTalker
+    def work_task():
+        try:
+            out = samtalker(target_age, first_voice)
+            result_q.put(out)
+        except Exception as e:
+            error_q.put(("work", e))
+
+    t_video = threading.Thread(target=video_task, daemon=False)  # 자연 종료 기다림
+    t_work  = threading.Thread(target=work_task,  daemon=True)   # 작업만 끝나면 됨. veo3 영상은 계속 재생
+
+    t_video.start()
+    t_work.start()
+
+    # 작업(샘토커) 완료까지 기다려 결과 확보
+    t_work.join()
+    # 에러 체크
+    if not error_q.empty():
+        who, err = error_q.get()
+        # 영상은 계속 재생해야 하므로 여기서 중단 신호는 보내지 않음
+        raise err
+
+    talking_video = result_q.get() if not result_q.empty() else None
+
+    # ② 영상은 끝까지 재생해야 하므로 여기서도 기다림
+    t_video.join()
+
+    return talking_video  # 반환값 : saddtalker 결과값
 
 
 
@@ -12,17 +66,28 @@ from sadtalker import run_sadtalker
 if __name__ == "__main__":
     
 # =============== 관객 입장 전 ========================
-    survey_result = run_survey_server()   # 성별, 테마 설문 결과를 수신
+    survey_result = run_survey_server()   # 결과 변수는 gender, age, theme 의 이름으로 저장됨.
     print(f"[SERVER] 설문 결과: {survey_result}")
 
 
 # ============= 관객 입장 후  =========================
     
-    # 설문 결과에서 관객 나이대 받기(survey.py의 q3을 나이대 질문으로 변경, q4를 테마 질문으로 변경하기)
-    survey_age = survey_result.get("q3")
-    # 오프닝 멘트 쳐주면서 관객이 버튼을 누르도록 유도
-    target_age = button(survey_age)
-    print(f"[BUTTON] 선택된 target_age: {target_age}")
+    
+    survey_age = survey_result.get("age")    # 설문 결과 : 관객 나이대 받기   
+
+    # survey_age에는 "20대"처럼 string으로 저장됨. 이걸 int 타입으로 변환해줌.
+    if isinstance(survey_age, str) and survey_age.endswith("대"):
+        try:
+            survey_age = int(survey_age.replace("대", ""))
+        except Exception:
+            survey_age = None
+     
+    
+    target_age = button(survey_age)    # 오프닝 멘트 쳐주면서 관객이 버튼을 누르도록 유도
+    gender = survey_result.get("gender")    # 설문 결과 : 성별
+    theme = survey_result.get("theme")      # 설문 결과 : 테마
+    
+    first_voice = get_first_voice(target_age, gender, theme)    # 설문 결과에 따라 기생성된 음성 파일 불러오기
     
     # 신원 확인 : 카메라로 얼굴 캡쳐
     face1 = capture()
@@ -30,17 +95,13 @@ if __name__ == "__main__":
     
     # ============ 스레딩1 (veo3 + sam/sadtalker) : 함수화해서 실행부에서는 함수 호출만! ============
     
-    # 시간 끌기 컨텐츠 : veo3 영상 출력 함수 ( 입력 파라미터는 설문에서 받은 q4, 리턴값은 없음)
+    # play_veo3() 에서 테마에 따른 영상 선택 로직 작성해야함 + 테마/성별/나이대에 따른 first_voice 미리 만들어둬야 함.
+    talking_video = veo3_with_samtalker(theme=theme, target_age=target_age, first_voice=first_voice)  
     
-    face2 = run_sam(target_age)
-
-    # first_voice = get_first_voice()  survey_result의 q3,q4를 받아서 기생성된 음성 파일을 가져오는 부분.(아직 구현 안됨)
-    talking_video = run_sadtalker(face2, first_voice)
-
-    
+        
     # ============ 스레딩2 (sadtalker영상 실행 + 영상에서 음성만 제외하고 따로 저장) =============
     
-    # talking_video를 실행
+    # talking_video를 실행 : 이거 따로 실행하는 함수 파일을 따로 제작하기
     # 동시에 talking_video에서 음성만 삭제된 영상(talking_no_voice)을 따로 저장
     
     
@@ -51,4 +112,6 @@ if __name__ == "__main__":
     # ai 답변 음성 + talking_no_voice를 합친 영상을 출력
     # 관객이 다시 ai에게 답변
     # 시공간이 흔들리는 연출 + 돌아갈 시간이라며 관객에게 B1을 누르도록 유도
+    
+    
     
