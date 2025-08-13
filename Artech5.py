@@ -2,7 +2,7 @@
 import threading
 from queue import Queue
 from survey_client import run_survey_server
-from button import button
+from button import button   # button_test.py로 변경해야함.
 from capture import capture
 from get_first_voice import get_first_voice
 from veo3 import play_veo3
@@ -10,10 +10,10 @@ from sam import run_sam
 from sadtalker import run_sadtalker
 from gpt import ask_gpt
 from gpt_stt import gpt_listen
+from clova import clova
 
 
 
-# 개별 함수 정의
 
 def samtalker(target_age, first_voice):
     face2 = run_sam(target_age)                 # SAM
@@ -84,8 +84,9 @@ if __name__ == "__main__":
         except Exception:
             survey_age = None
      
-    
-    target_age = button(survey_age)    # 오프닝 멘트 쳐주면서 관객이 버튼을 누르도록 유도
+     
+    # 스레딩 0 ; 오프닝 + 버튼 유도
+    target_age = button(survey_age)    
     gender = survey_result.get("gender")    # 설문 결과 : 성별
     theme = survey_result.get("theme")      # 설문 결과 : 테마
     
@@ -117,6 +118,7 @@ if __name__ == "__main__":
     user_input = gpt_listen(duration=5)
     answer = ask_gpt(user_input, theme)
     # 클로바 tts 파일 함수화(target_age,gender,answer를 인자로 받는)하기. ex) voice = clova(target_age, gender, answer)
+    voice = clova(target_age, gender, answer)
     # voice + talking_no_voice를 합친 영상을 제작
 
     # 매번 영상을 합성하지 말고, 멀티 스레딩을 써서 voice를 출력하는동안만 talking_no_voice를 재생하자.
