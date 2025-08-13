@@ -8,9 +8,11 @@ from get_first_voice import get_first_voice
 from veo3 import play_veo3
 from sam import run_sam
 from sadtalker import run_sadtalker
+from remove_audio import remove_audio   
 from gpt import ask_gpt
 from gpt_stt import gpt_listen
 from clova import clova
+from ai_reply import AI_reply
 
 
 
@@ -106,6 +108,7 @@ if __name__ == "__main__":
     
     # talking_video를 실행 : 이거 따로 실행하는 함수 파일을 따로 제작하기
     # 동시에 talking_video에서 음성만 삭제된 영상(talking_no_voice)을 따로 저장
+    talking_no_voice = remove_audio(talking_video)
     
     
     # ======================== ai와 관객의 상호 대화 파트 ==================================
@@ -117,14 +120,20 @@ if __name__ == "__main__":
     # 관객이 ai에게 답변(마이크 활성화)
     user_input = gpt_listen(duration=5)
     answer = ask_gpt(user_input, theme)
-    # 클로바 tts 파일 함수화(target_age,gender,answer를 인자로 받는)하기. ex) voice = clova(target_age, gender, answer)
-    voice = clova(target_age, gender, answer)
-    # voice + talking_no_voice를 합친 영상을 제작
+    # 클로바 tts 파일 함수화(target_age,gender,answer를 인자로 받는)하기. 
+    voice = clova(target_age, gender, answer)   # 인자에 목소리 톤,속도,감정 추가 가능함.
 
-    # 매번 영상을 합성하지 말고, 멀티 스레딩을 써서 voice를 출력하는동안만 talking_no_voice를 재생하자.
+    # voice + talking_no_voice를 합친 영상을 출력하고 성공하면 true를 반환
+    IsReplySuccess = AI_reply(talking_no_voice, voice)   # cv2 기반
 
-    # voice + talking_no_voice를 합친 영상을 출력
     # 관객이 다시 ai에게 답변
+    if IsReplySuccess:
+        user_input = gpt_listen(duration=5)
+        answer = ask_gpt(user_input, theme)
+        voice = clova(target_age, gender, answer)
+
+    AI_reply(talking_no_voice, voice)
+
     # 시공간이 흔들리는 연출 + 돌아갈 시간이라며 관객에게 B1을 누르도록 유도
     
     
