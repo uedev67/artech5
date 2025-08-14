@@ -95,7 +95,7 @@ if __name__ == "__main__":
     # survey_age에는 "20대"처럼 string으로 저장됨. 이걸 int 타입으로 변환해줌.
     if isinstance(survey_age, str) and survey_age.endswith("대"):
         try:
-            survey_age = int(survey_age.replace("대", ""))
+            survey_age = int(survey_age.replace("대", ""))/10
         except Exception:
             survey_age = None
      
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     first_voice = get_first_voice(target_age, gender, theme)    # 설문 결과에 따라 기생성된 음성 파일 불러오기
     
     # 신원 확인 : 카메라로 얼굴 캡쳐
-    face1 = capture()
+    face1 = capture()   # 전체화면, 1:1 비율 화면으로 모니터에 띄우기
     
     
     # ============ 스레딩1 (veo3 + sam/sadtalker) : 함수화해서 실행부에서는 함수 호출만! ============
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     # voice + talking_no_voice를 합친 영상을 출력하고 성공하면 true를 반환
     IsReplySuccess = AI_reply(talking_no_voice, voice)   # cv2 기반
-
+    
     # 관객이 다시 ai에게 답변
     if IsReplySuccess:
         voice = mic_listen_and_reply(theme,target_age,gender)
@@ -141,5 +141,6 @@ if __name__ == "__main__":
     # 시공간이 흔들리는 연출 + 돌아갈 시간이라며 관객에게 B1을 누르도록 유도
     
     
+
 
     
