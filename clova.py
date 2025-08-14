@@ -3,7 +3,7 @@ import random
 def clova(target_age: int, gender: str, answer: str,
           out_path: str = r"C:\Artech5\Image_Box\Image2\voice\voice.wav",
           speed: int = 0, pitch: int = 0, volume: int = 0,
-          emotion: Optional[str] = None, style: Optional[str] = None,
+          
           force_16k_wav: bool = True) -> str:
     """
     target_age: 10, 20, 30, ...
@@ -60,7 +60,7 @@ AGE_GENDER_SPEAKERS = {
     "청년여성": ["mijin", "nara", "nbora", "nes_c_mikyung", "neunyoung", "ngoeun", "nihyun", "njiwon", "njiyun", "nminseo", "nminyoung", "nyeji", "nyejin", "nyujin", "nyuna"],
     "중년남성": ["nes_c_kihyo", "nmovie", "nsangdo", "nseonghoon", "nseungpyo", "nsinu", "nsiyoon", "ntaejin", "nwontak", "nwoosik", "nyoungil"],
     "중년여성": ["dara_ang", "napple", "nara_call", "nes_c_sohyun", "neunseo", "nheera", "nsujin", "nsunhee", "nsunkyung", "ntiffany", "nyounghwa", "nyoungmi"]
-}
+}   
 
 def _env(var: str, default: str = "") -> str:
     v = os.getenv(var, default).strip()
@@ -70,14 +70,15 @@ def _env(var: str, default: str = "") -> str:
 
 
 # 음성 파라미터는 여기서 설정
+from typing import Optional
 def request_clova_tts(
     text: str, speaker: str,
     format_: str = "wav",
-    speed: int = 0,
-    pitch: int = 0,
-    volume: int = 0,
-    emotion: Optional[str] = None,
-    style: Optional[str] = None
+    speed: int = 1,
+    pitch: int = -1,
+    volume: int = 2,
+    emotion: Optional[str] = "happy",
+    style: Optional[str] = "casual"
 ) -> bytes:
     
     client_id = _env("NCP_CLOVA_TTS_CLIENT_ID")  # 환경 변수에 미리 입력
@@ -140,8 +141,8 @@ def synthesize_to_file(
     speed: int = 0,
     pitch: int = 0,
     volume: int = 0,
-    emotion: Optional[str] = None,
-    style: Optional[str] = None,
+    emotion: Optional[str] = "happy",
+    style: Optional[str] = "casual",
     force_16k_wav: bool = True
 ):
     # 파라미터값을 받아서
@@ -169,11 +170,11 @@ def main():
         print("[ERROR] 변환할 문장이 없습니다.")
         sys.exit(1)
     parser = argparse.ArgumentParser(description="NAVER CLOVA TTS (Premium) → WAV 16k")
-    parser.add_argument("--speed", type=int, default=0)
-    parser.add_argument("--pitch", type=int, default=0)
-    parser.add_argument("--volume", type=int, default=0)
-    parser.add_argument("--emotion", default=None)
-    parser.add_argument("--style", default=None)
+    parser.add_argument("--speed", type=int, default=-1)
+    parser.add_argument("--pitch", type=int, default=-1)
+    parser.add_argument("--volume", type=int, default=1)
+    parser.add_argument("--emotion", default= 1)
+    parser.add_argument("--style", default= None)
     parser.add_argument("--no-force-16k", action="store_true")
     args = parser.parse_args()
     out_path = r"C:\Artech5\Image_Box\Image2\voice\voice.wav"

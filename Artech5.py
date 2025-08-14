@@ -13,7 +13,7 @@ from gpt import ask_gpt
 from gpt_stt import gpt_listen
 from clova import clova
 from ai_reply import AI_reply
-
+import time
 
 
 
@@ -66,10 +66,15 @@ def veo3_with_samtalker(theme, target_age, first_voice):
 
 
 # 대화부 : 관객 음성 듣고, ai 음성을 반환
-def mic_listen_and_reply(theme,target_age,gender):
-    user_input = gpt_listen(duration=5)
+def mic_listen_and_reply(theme,target_age,gender,whisper):
+    
+    while whisper is None:
+        time.sleep(0.1)
+    
+    user_input = gpt_listen(duration=7, whisper_model=whisper)  # whisper 모델이 준비된 후 gpt_listen 실행
     answer = ask_gpt(user_input, theme)
     voice = clova(target_age, gender, answer)    # 인자에 목소리 톤,속도,감정 추가 가능함.
+    
     return voice
 
 
@@ -112,9 +117,9 @@ if __name__ == "__main__":
     talking_video = veo3_with_samtalker(theme=theme, target_age=target_age, first_voice=first_voice)  
     
         
-    # ============ 스레딩2 (sadtalker영상 실행 + 영상에서 음성만 제외하고 따로 저장) =============
+    # ============ 스레딩2 (sadtalker영상 실행 + 오디오제거작업 + whisper 모델 미리 로드) =============
     
-    talking_no_voice = play_and_remove_audio_concurrently(talking_video)
+    talking_no_voice,whisper = play_and_remove_audio_concurrently(talking_video)
     
     
     # ======================== ai와 관객의 상호 대화 파트 ==================================
@@ -122,7 +127,7 @@ if __name__ == "__main__":
     # 이미 스레딩2에서 ai가 먼저 말을 걸었음. 
 
     # 관객이 ai에게 답변하는 부분
-    voice = mic_listen_and_reply(theme,target_age,gender)    # 인자에 목소리 톤,속도,감정 추가 가능함.
+    voice = mic_listen_and_reply(theme,target_age,gender,whisper_model=whisper)    # 인자에 목소리 톤,속도,감정 추가 가능함.
 
     # voice + talking_no_voice를 합친 영상을 출력하고 성공하면 true를 반환
     IsReplySuccess = AI_reply(talking_no_voice, voice)   # cv2 기반
