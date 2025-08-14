@@ -8,7 +8,7 @@ from get_first_voice import get_first_voice
 from veo3 import play_veo3
 from sam import run_sam
 from sadtalker import run_sadtalker
-from remove_audio import remove_audio   
+from remove_audio import play_and_remove_audio_concurrently   
 from gpt import ask_gpt
 from gpt_stt import gpt_listen
 from clova import clova
@@ -65,6 +65,14 @@ def veo3_with_samtalker(theme, target_age, first_voice):
     return talking_video  # 반환값 : saddtalker 결과값
 
 
+# 대화부 : 관객 음성 듣고, ai 음성을 반환
+def mic_listen_and_reply(theme,target_age,gender):
+    user_input = gpt_listen(duration=5)
+    answer = ask_gpt(user_input, theme)
+    voice = clova(target_age, gender, answer)    # 인자에 목소리 톤,속도,감정 추가 가능함.
+    return voice
+
+
 
 # 실행부
 if __name__ == "__main__":
@@ -106,31 +114,22 @@ if __name__ == "__main__":
         
     # ============ 스레딩2 (sadtalker영상 실행 + 영상에서 음성만 제외하고 따로 저장) =============
     
-    # talking_video를 실행 : 이거 따로 실행하는 함수 파일을 따로 제작하기
-    # 동시에 talking_video에서 음성만 삭제된 영상(talking_no_voice)을 따로 저장
-    talking_no_voice = remove_audio(talking_video)
+    talking_no_voice = play_and_remove_audio_concurrently(talking_video)
     
     
     # ======================== ai와 관객의 상호 대화 파트 ==================================
-    
-    # 노화된 얼굴 face2는 화질이 좋으니, veo3 끝나고 잠시동안(한 2초?) 전체화면으로 보여주자.
-    # sadtalker 영상은 화질이 다소 떨어지니, 왼쪽 화면 일부에서 재생, 오른쪽 화면엔 노화된 얼굴과 테마 설명글 배치.(신원증처럼)
 
     # 이미 스레딩2에서 ai가 먼저 말을 걸었음. 
-    # 관객이 ai에게 답변(마이크 활성화)
-    user_input = gpt_listen(duration=5)
-    answer = ask_gpt(user_input, theme)
-    # 클로바 tts 파일 함수화(target_age,gender,answer를 인자로 받는)하기. 
-    voice = clova(target_age, gender, answer)   # 인자에 목소리 톤,속도,감정 추가 가능함.
+
+    # 관객이 ai에게 답변하는 부분
+    voice = mic_listen_and_reply(theme,target_age,gender)    # 인자에 목소리 톤,속도,감정 추가 가능함.
 
     # voice + talking_no_voice를 합친 영상을 출력하고 성공하면 true를 반환
     IsReplySuccess = AI_reply(talking_no_voice, voice)   # cv2 기반
 
     # 관객이 다시 ai에게 답변
     if IsReplySuccess:
-        user_input = gpt_listen(duration=5)
-        answer = ask_gpt(user_input, theme)
-        voice = clova(target_age, gender, answer)
+        voice = mic_listen_and_reply(theme,target_age,gender)
 
     AI_reply(talking_no_voice, voice)
 
