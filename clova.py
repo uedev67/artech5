@@ -79,7 +79,7 @@ SPEAKER_PRESETS: Dict[str, List[Dict]] = {
     # 5060 여성
     "5060여성": [
         {"speaker": "napple",   "speed": -1, "pitch": 1,  "themes": ["사이버펑크", "에코 스마트시티", "화성 이주"]},
-        {"speaker": "nkyunglee","speed": -1, "pitch": 0,  "themes": ["사이버펑크", "에코 스마트시티", "화성 이주","지하 커뮤니티"]},
+        {"speaker": "nkyunglee","speed": 0, "pitch": 0,  "themes": ["지하 커뮤니티"]},
         {"speaker": "nheera",   "speed": -1, "pitch": 0,  "themes": ["사이버펑크", "에코 스마트시티", "화성 이주"]},
         {"speaker": "njiyun",   "speed": -1, "pitch": 1,  "themes": ["지하 커뮤니티"]},
         {"speaker": "njangj",   "speed": -1, "pitch": 1,  "themes": ["사이버펑크", "화성 이주"]},
@@ -87,11 +87,10 @@ SPEAKER_PRESETS: Dict[str, List[Dict]] = {
     # 3040 여성
     "3040여성": [
         {"speaker": "napple",      "speed": -1, "pitch": 0,  "themes": ["사이버펑크", "에코 스마트시티", "화성 이주","지하 커뮤니티"]},
-        {"speaker": "nkyunglee",   "speed": -1, "pitch": -1, "themes": ["사이버펑크", "에코 스마트시티", "화성 이주","지하 커뮤니티"]},
+        {"speaker": "nkyunglee",   "speed": 0, "pitch": -1, "themes": ["지하 커뮤니티"]},
         {"speaker": "nheera",      "speed": -1, "pitch": -1, "themes": ["사이버펑크", "에코 스마트시티", "화성 이주"]},
         {"speaker": "njiyun",      "speed": -1, "pitch": 0,  "themes": ["지하 커뮤니티"]},
         {"speaker": "nsujin",      "speed": -1, "pitch": 0,  "themes": ["지하 커뮤니티", "사이버펑크"]},
-        {"speaker": "nes_c_sohyun","speed": 0, "pitch": 0,  "themes": ["에코 스마트시티"]},
         {"speaker": "njangj",      "speed": -1, "pitch": 0,  "themes": ["사이버펑크", "화성 이주"]},
     ],
     # 1020 여성
@@ -339,3 +338,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
