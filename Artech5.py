@@ -73,9 +73,10 @@ def mic_listen_and_reply(theme,target_age,gender,whisper):
     
     user_input = gpt_listen(duration=7, whisper_model=whisper)  # whisper 모델이 준비된 후 gpt_listen 실행
     answer = ask_gpt(user_input, theme)
-    voice = clova(target_age, gender, answer)    # 인자에 목소리 톤,속도,감정 추가 가능함.
+    voice = clova(target_age, gender, theme, answer)    # 인자에 speed,pitch,speaker 추가
     
     return voice
+
 
 
 
