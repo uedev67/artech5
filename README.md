@@ -7,6 +7,13 @@ Artech5.py를 읽어주세요. 콘텐츠 전반을 관리하는 핵심 파일입
 미래는 어떤 모습일까요? 기술의 고도화와 노동의 종말, 육체의 편안함, 사고과정의 퇴행, 혹은 인간의 욕심이 낳은 전쟁으로 피난처에서 모여 살 수도 있습니다.
 선택지는 방문자분께 드리죠. 당신이 원하는 미래의 모습으로 떠나보세요. 그곳에선 또다른 내가 있을겁니다.
 
+## upscale.py 사용 전 세팅(파워쉘 명령어)
+git clone https://github.com/xinntao/Real-ESRGAN.git
+cd Real-ESRGAN
+pip install -r requirements.txt
+pip install -e .
+python scripts/download_models.py
+
 
 ## 기능 설명
 
