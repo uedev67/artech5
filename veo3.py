@@ -1,26 +1,24 @@
 import cv2
 
-def play_veo3(video_path):
-    cap = cv2.VideoCapture(video_path)
+import subprocess
 
-    if not cap.isOpened():
-        print(f"[ERROR] 동영상을 열 수 없습니다: {video_path}")
-        return
-
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        cv2.imshow("Video Player", frame)
-
-        # 'q' 키를 누르면 종료
-        if cv2.waitKey(25) & 0xFF == ord('q'):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
+def play_veo3(theme=None):
+    # 테마별 영상 경로 매핑
+    theme_video_map = {
+        "지하벙커 생존자 커뮤니티": r"C:\Artech5\Image_Box\veo3\eco_smart.mp4",
+        "사이버펑크": r"C:\Artech5\Image_Box\veo3\eco_smart.mp4",
+        "에코 스마트시티": r"C:\Artech5\Image_Box\veo3\eco_smart.mp4",
+        "화성 이주": r"C:\Artech5\Image_Box\veo3\eco_smart.mp4",
+    }
+    video_path = theme_video_map.get(theme, r"C:\Artech5\Image_Box\veo3\eco_smart.mp4")
+    print(f"[INFO] 선택된 테마: {theme}, 영상 경로: {video_path}")
+    try:
+        subprocess.run([
+            "ffplay", "-autoexit", "-fs", video_path
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"[ERROR] ffplay 영상 실행 실패: {e}")
 
 if __name__ == "__main__":
-    video_path = r"C:\Artech5\Image_Box\veo3\space_life.mp4"
-    play_veo3(video_path)
+    video_path = r"C:\Artech5\Image_Box\veo3\eco_smart.mp4"
+    play_veo3(theme)

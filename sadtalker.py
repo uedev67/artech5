@@ -163,3 +163,19 @@ def run_sadtalker(face_path, audio_path,
         print(f"[ERROR] SadTalker 실행 실패: {e}")
         return None
 
+
+
+
+if __name__ == "__main__":
+    # 테스트용: 얼굴 이미지와 음성 파일 경로를 입력받아 실행
+    source_image = r"C:\Artech5\Image_Box\Image2\image_age_60.jpg"
+    driven_audio = r"C:\Artech5\Image_Box\clova_sample\에코 스마트시티_남자_50~60대.wav"
+    result = run_sadtalker(
+        face_path=source_image,
+        audio_path=driven_audio,
+        result_dir="results",
+        size=256,
+        preprocess="crop",
+        verbose=True
+    )
+    print(f"[RESULT] 생성된 영상 경로: {result}")
