@@ -38,6 +38,14 @@ gpt_stt.py : 타임머신 안에는 마이크가 있습니다. 평행세계의 �
 
 gpt_clova_tts.py : 평행세계의 나의 목소리를 구현합니다. 100가지가 넘는 다양한 음성으로 성별, 나이대를 지정할 수 있습니다. 네이버 클로바 tts를 사용하였습니다.
 
+
+
+## 사용된 기술들
+
+로컬 임포트 : 멀티프로세싱을 사용하여 동시에 여러 일을 해야하는 타이밍이 있습니다. 그중 하나가 veo3 + samtalker 실행입니다. 두 작업 모두 GPU를 사용합니다. 스레딩으로는 윈도우 6 핸들 에러가 발생합니다.
+따라서 멀티 프로세싱방식으로 변경, import run_sadtalker는 로컬 임포트(run_sadtaler함수 안에서 임포트)를 해서 실행부에서 제일 먼저 실행되는 multiprocessing.set_start_method('spawn')와의 충돌을 막았습니다.
+
+
 ## 기타 정보
 네이버 콘솔(몰라도 됩니다.)
 https://console.ncloud.com/naver-service/application  
