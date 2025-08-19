@@ -1,85 +1,111 @@
 import multiprocessing
+import vlc
+import time
 import os
-import cv2
+import sys
+import subprocess # subprocess 모듈 추가
 
+# --- Task 1: Veo3 영상 재생 (변경 없음) ---
+def play_veo3(theme):
+    theme_video_map = {
+        "지하벙커 생존자 커뮤니티": r"C:\Artech5\Image_Box\veo3\eco_smart.mp4",
+        "사이버펑크": r"C:\Artech5\Image_Box\veo3\eco_smart.mp4",
+        "에코 스마트시티": r"C:\Artech5\Image_Box\veo3\eco_smart.mp4",
+        "화성 이주": r"C:\Artech5\Image_Box\veo3\eco_smart.mp4",
+    }
+    video_path = theme_video_map.get(theme)
+    if not video_path or not os.path.exists(video_path):
+        print(f"[VLC Player Error] '{theme}'에 해당하는 영상을 찾을 수 없거나 파일이 없습니다.")
+        return
 
-
-
-# --- 작업 1: 별도의 프로세스에서 실행될 동영상 재생 함수 ---
-def play_video_func(video_path):
-
-    while True: # 비디오를 무한 반복 재생하기 위한 루프
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            print(f"[Video Player] 에러: 비디오 파일을 열 수 없습니다: {video_path}")
-            return
-
-        print(f"[Video Player] 영상 재생 시작: {video_path}")
-        
-        window_name = 'Playing Video'
-        cv2.namedWindow(window_name, cv2.WINDOW_FULLSCREEN)
-        cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if ret:
-                cv2.imshow(window_name, frame)
-                if cv2.waitKey(25) & 0xFF == ord('q'):
-                    cap.release()
-                    cv2.destroyAllWindows()
-                    print("[Video Player] 사용자가 재생을 중단했습니다.")
-                    return # 'q'를 누르면 함수 전체 종료
-            else:
-                break # 비디오의 끝에 도달하면 루프 탈출
-        
-        cap.release() # 다음 반복을 위해 자원 해제
-        print("[Video Player] 영상 한 번 재생 완료. 다시 시작합니다.")
-    cv2.destroyAllWindows()
-
-
-# --- 작업 2: 별도의 프로세스에서 실행될 SadTalker 실행 함수 ---
-def run_sadtalker_func(source_image, driven_audio, result_dir):
-    from sadtalker import run_sadtalker
-    print("[SadTalker] 비디오 생성을 시작합니다.")
-    result_path = run_sadtalker(
-        face_path=source_image,
-        audio_path=driven_audio,
-        result_dir=result_dir,
-        size=256,
-        preprocess="crop",
-        verbose=True
-    )
-    if result_path:
-        print(f"[SadTalker] 비디오 생성 완료: {result_path}")
-    else:
-        print("[SadTalker] 비디오 생성 실패.")
-
-
-if __name__ == "__main__":
-    # 중요: Windows 및 CUDA 환경에서 멀티프로세싱 시 'spawn' 방식을 사용하는 것이 안전합니다.
-    multiprocessing.set_start_method('spawn')
-
-    video_to_play_path = r"C:\ARTECH_3\년대_지하_벙커_생존자_취침.mp4"  
-
-    sadtalker_source_image = r"C:\ARTECH_3\Image_Box\image2\image_age_65.jpg"
-    sadtalker_driven_audio = r"C:\ARTECH_3\clova_voice\5060 남자\voice_nraewon.wav"
-    sadtalker_result_dir = r"C:\ARTECH_3\Image_Box\result.mp4"
-
-    video_process = multiprocessing.Process(target=play_video_func, args=(video_to_play_path,))
-    sadtalker_process = multiprocessing.Process(target=run_sadtalker_func, args=(sadtalker_source_image, sadtalker_driven_audio, sadtalker_result_dir))
-
-    print("메인 프로그램: 동영상 재생 및 SadTalker 프로세스를 시작합니다.")
-    video_process.start()
-    sadtalker_process.start()
-
-
-    # 각 프로세스가 끝날 때까지 메인 스크립트가 기다리도록 합니다.
-    sadtalker_process.join() # SadTalker 작업이 끝날 때까지 기다림
+    instance = vlc.Instance("--no-xlib")
+    player = instance.media_player_new()
+    media = instance.media_new(video_path)
+    player.set_media(media)
+    player.set_fullscreen(True)
     
-    # SadTalker 작업이 끝나면 영상 재생 프로세스를 강제 종료
+    print(f"[VLC Player] '{theme}' 테마 영상 재생 시작: {video_path}")
+    while True:
+        player.play()
+        time.sleep(1.5)
+        while player.is_playing():
+            time.sleep(0.5)
+        player.stop()
+
+
+# --- 메인 함수: 외부 호출용 (수정됨) ---
+def veo3_with_sadtalker(theme, first_voice, face2):
+    base_path = "C:\\Artech5"
+    main_path = os.path.join(base_path, "0.Main")
+    sadtalker_result_dir = os.path.join(base_path, "Image_Box", "Image3")
+    os.makedirs(sadtalker_result_dir, exist_ok=True)
+
+    video_process = multiprocessing.Process(target=play_veo3, args=(theme,))
+    print("메인 프로그램: 동영상 재생 프로세스를 시작합니다.")
+    video_process.start()
+
+    worker_script_path = os.path.join(main_path, 'sadtalker_worker.py')
+    # [수정] Worker에게 face2 경로를 전달하기 위해 --face_path 인자 추가
+    command = [
+        sys.executable,
+        worker_script_path,
+        '--audio', first_voice,
+        '--result_dir', sadtalker_result_dir,
+        '--face_path', face2  # <-- 이 인자 추가
+    ]
+
+    print("메인 프로그램: SadTalker Worker 프로세스를 시작합니다.")
+    sadtalker_proc = subprocess.Popen(
+        command,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        cwd=main_path,
+        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+    )
+    
+    # ... (이하 communicate() 부터 return 까지의 코드는 변경 없습니다) ...
+    stdout, stderr = sadtalker_proc.communicate()
+
+    if stderr:
+        print(f"[WORKER_ERROR]\n{stderr.strip()}")
+
+    talking_video = stdout.strip().splitlines()[-1] if stdout.strip() else None
+
+    if talking_video and os.path.exists(talking_video):
+        print(f"메인 프로그램: Worker로부터 결과물 경로 수신 성공: {talking_video}")
+    else:
+        print("메인 프로그램: Worker로부터 유효한 결과물을 받지 못했습니다.")
+        talking_video = None
+
     if video_process.is_alive():
         print("메인 프로그램: SadTalker 작업이 완료되어 동영상 재생을 종료합니다.")
-        video_process.terminate() # or .kill()
+        video_process.terminate()
         video_process.join()
 
     print("메인 프로그램: 모든 작업이 완료되었습니다.")
+    return talking_video
+
+
+
+
+# 테스트 
+if __name__ == "__main__":
+    try:
+        multiprocessing.set_start_method('spawn')
+    except RuntimeError:
+        pass
+
+    video_theme = "지하벙커 생존자 커뮤니티"
+    voice_path = r"C:\Artech5\Image_Box\eco_50_60.wav"
+    # [수정] 테스트를 위한 face2 이미지 경로 예시
+    face2_path = r"C:\Artech5\Image_Box\Image2\image_age_60.jpg"
+
+    # [수정] 변경된 함수에 맞게 테스트 호출
+    generated_video_path = veo3_with_sadtalker(video_theme, voice_path, face2_path)
+
+    if generated_video_path:
+        print(f"\n✅ 최종 생성된 영상 경로: {generated_video_path}")
+    else:
+        print("\n❌ 영상 생성에 실패했습니다.")

@@ -73,3 +73,8 @@ def run_sam(target_age, face_path=None):
     else:
         print("❌ SAM 응답에서 base64 이미지를 찾지 못했습니다.")
         return None
+
+
+if __name__ == "__main__":
+    path = r"C:\Artech5\Image_Box\Image1\face_1.jpg"
+    run_sam(50,path)

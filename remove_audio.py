@@ -1,34 +1,55 @@
+# remove_audio.py (수정된 버전)
+
 import os
 import subprocess
-from typing import Optional
-import whisper
+import time
+import multiprocessing
+from typing import Optional, Tuple, Any
+
+# 서드파티 라이브러리는 함수 내부에서 import 합니다.
+# import vlc  <- 이 줄을 주석 처리하거나 삭제
+# import whisper <- 이 줄을 주석 처리하거나 삭제
 
 
 
-# Whisper 모델 로드 함수
-def load_whisper_model(model_name="large-v3"):
-    
+
+
+
+# whisper 모델을 로드하는 함수
+def whisper_loader_process(queue, model_name):
+    """자식 프로세스에서 Whisper 모델을 로드하고 결과를 큐에 넣는 함수"""
+    import whisper
     model = whisper.load_model(model_name)
-    print(f"[WHISPER] 모델 로드 완료 : {model_name}")
-    return model
+    print(f"[WHISPER] 모델 로드 완료: {model_name}")
+    queue.put(model)
 
 
-
-# 영상 재생 함수
-
-def play_video_with_audio_ffplay(video_path: str, ffplay_bin: str = "ffplay", fullscreen: bool = True) -> subprocess.Popen:
+# sadtalker 영상 재생 함수
+def play_video_vlc(video_path: str, fullscreen: bool = True): # 반환 타입에서 vlc.MediaPlayer 제거
+    """VLC를 사용하여 비디오를 재생합니다."""
+    import vlc  # 함수 내부에서 import
     if not os.path.isfile(video_path):
         raise FileNotFoundError(f"입력 파일을 찾을 수 없습니다: {video_path}")
-    cmd = [ffplay_bin, "-autoexit", "-loglevel", "error"]
+
+    instance = vlc.Instance("--no-xlib --quiet")
+    player = instance.media_player_new()
+    media = instance.media_new(video_path)
+    player.set_media(media)
+
     if fullscreen:
-        cmd.append("-fs")
-    cmd.append(video_path)
-    return subprocess.Popen(cmd)
+        player.set_fullscreen(True)
+
+    print(f"[VLC Player] 영상 재생 시작: {video_path}")
+    player.play()
+    time.sleep(1)
+    return player
 
 
-# 오디오 제거 함수
+
+
+# sadtalker 영상에서 소리만 제거하는 함수
 def remove_audio_ffmpeg(video_path: str, output_path: Optional[str] = None, ffmpeg_bin: str = "ffmpeg") -> subprocess.Popen:
-
+    """ffmpeg를 사용하여 비디오에서 오디오를 제거하는 서브프로세스를 시작합니다."""
     if not os.path.isfile(video_path):
         raise FileNotFoundError(f"입력 파일을 찾을 수 없습니다: {video_path}")
 
@@ -43,51 +64,65 @@ def remove_audio_ffmpeg(video_path: str, output_path: Optional[str] = None, ffmp
         "-c", "copy",
         output_path
     ]
+    print(f"[FFmpeg] 오디오 제거 완료 : {output_path}")
     return subprocess.Popen(cmd)
 
 
-# 스레딩2 : 영상 재생 + 오디오 제거
-def play_and_remove_audio_concurrently(talking_video: str,
-                                      ffplay_bin: str = "ffplay",
-                                      ffmpeg_bin: str = "ffmpeg",
-                                      fullscreen: bool = True) -> str:
 
+# 메인 호출 함수
+def play_and_process_concurrently(talking_video: str,
+                                  ffmpeg_bin: str = "ffmpeg",
+                                  fullscreen: bool = True) -> Tuple[str, any]: # whisper.Whisper 타입을 any로 변경
+    """멀티프로세싱으로 영상 재생(VLC), 오디오 제거, Whisper 모델 로드를 동시에 수행합니다."""
     base, ext = os.path.splitext(talking_video)
     output_path = f"{base}_no_audio{ext if ext else '.mp4'}"
 
-    import threading
-    whisper_model_holder = {}
-    def whisper_thread():
-        whisper_model_holder["model"] = load_whisper_model("medium")
+    model_queue = multiprocessing.Queue()
 
-    # 동시 시작 (영상 재생, 오디오 제거, whisper 모델 로드)
-    t_whisper = threading.Thread(target=whisper_thread, daemon=True)
-    t_whisper.start()
+    # 'load_whisper_model_process' 함수 대신 lambda를 사용하여 직접 처리
+    p_whisper = multiprocessing.Process(
+        target=whisper_loader_process,
+        args=(model_queue, "medium"),
+        daemon=True
+    )
+    p_whisper.start()
 
-    p_play = play_video_with_audio_ffplay(talking_video, ffplay_bin=ffplay_bin, fullscreen=fullscreen)
+    vlc_player = play_video_vlc(talking_video, fullscreen=fullscreen)
     p_strip = remove_audio_ffmpeg(talking_video, output_path=output_path, ffmpeg_bin=ffmpeg_bin)
 
-    play_rc = p_play.wait()      # 재생 종료 대기
-    strip_rc = p_strip.wait()    # 오디오 제거 후, 영상이 끝날 때까지 대기
-    t_whisper.join()             # whisper 모델 로드 완료까지 대기
+    while vlc_player.is_playing():
+        time.sleep(0.5)
+    print("[VLC Player] 영상 재생 완료.")
+    
+    vlc_player.stop()  # 플레이어 정지
+    vlc_player.release() # 플레이어 리소스 해제 (창이 닫힘)
 
-    if play_rc != 0:
-        print(f"[경고] 재생 프로세스 종료 코드: {play_rc}")
+    # 1. 큐에서 데이터를 먼저 꺼내서 Whisper 프로세스의 대기를 풀어줍니다.
+    whisper_model = model_queue.get()
+
+    # 2. 이제 나머지 프로세스들이 끝날 때까지 안전하게 기다립니다.
+    strip_rc = p_strip.wait()
+    p_whisper.join()
+
     if strip_rc != 0:
         raise RuntimeError(f"무음 변환 실패 (ffmpeg 종료 코드 {strip_rc})")
 
-    # whisper_model_holder["model"]에 whisper 모델 객체가 있음
-    return output_path, whisper_model_holder.get("model")   # 오디오 제거된 영상 경로, whisper 모델 반환
+    return output_path, whisper_model
 
 
-# 사용 예시
-
+# 테스트 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
+
     talking_video = "sample_4sec_with_audio.mp4"
-    talking_no_voice = play_and_remove_audio_concurrently(
-        talking_video,
-        ffplay_bin="ffplay",   # PATH에 없다면 절대경로 지정 가능: "C:/ffmpeg/bin/ffplay.exe"
-        ffmpeg_bin="ffmpeg",   # 예: "C:/ffmpeg/bin/ffmpeg.exe"
-        fullscreen=True
-    )
-    print("무음 동영상 저장 경로:", talking_no_voice)
+
+    if not os.path.exists(talking_video):
+        print(f"오류: '{talking_video}' 파일을 찾을 수 없습니다. 경로를 확인해주세요.")
+    else:
+        output_path, model = play_and_process_concurrently(
+            talking_video,
+            ffmpeg_bin="ffmpeg",
+            fullscreen=True
+        )
+        print(f"\n무음 동영상 저장 경로: {output_path}")
+        print(f"로드된 Whisper 모델: {model}")
