@@ -9,7 +9,9 @@ veo3_sadtalker, veo3_sam, sadtalker_worker 이렇게 3개 파일에서 초기 �
 현재 whisper 모델 로드 멀티프로세싱시에, 데드락 이슈가 해결되지 않아서, (sadtalker + 오디오제거) 다음에 (whisper 로드 + 로딩중 영상 재생) 이렇게 수정 생각중입니다.
 
 [ 테스트 바람 ]
+
 multi3.py : sadtalker 영상 재생 + 소리 제거 작업
+
 whisper.py : whisper 모델 로딩 + (로딩 중 영상 및 마이크 녹음 영상 재생)
 
 [남은 작업들]
