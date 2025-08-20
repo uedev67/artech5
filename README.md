@@ -8,6 +8,10 @@ Artech5.py를 읽어주세요. 콘텐츠 전반을 관리하는 핵심 파일입
 veo3_sadtalker, veo3_sam, sadtalker_worker 이렇게 3개 파일에서 초기 영상 처리를 담당합니다.
 현재 whisper 모델 로드 멀티프로세싱시에, 데드락 이슈가 해결되지 않아서, (sadtalker + 오디오제거) 다음에 (whisper 로드 + 로딩중 영상 재생) 이렇게 수정 생각중입니다.
 
+[ 테스트 바람 ]
+multi3.py : sadtalker 영상 재생 + 소리 제거 작업
+whisper.py : whisper 모델 로딩 + (로딩 중 영상 및 마이크 녹음 영상 재생)
+
 [남은 작업들]
 - upscale.py를 veo3_sadtalker에 이식.
 - 대화부 구현 : 멀티프로세싱으로 모니터 영상 재생 + (stt - gpt - tts) 작업 테스트하기
