@@ -10,13 +10,14 @@ veo3_sadtalker, veo3_sam, sadtalker_worker 이렇게 3개 파일에서 초기 �
 
 [ 테스트 바람 ]
 
-multi3.py : sadtalker 영상 재생 + 소리 제거 작업
+multi3.py : sadtalker 영상 재생 + 소리 제거 작업( 해결 )
 
-whisper.py : whisper 모델 로딩 + (로딩 중 영상 및 마이크 녹음 영상 재생)
+whisper.py : whisper 모델 로딩 + (로딩 중 영상 및 마이크 녹음 영상 재생)  (해결)
 
-[남은 작업들]
-- upscale.py를 veo3_sadtalker에 이식.
-- 대화부 구현 : 멀티프로세싱으로 모니터 영상 재생 + (stt - gpt - tts) 작업 테스트하기
+upscale.py를 veo3_sadtalker에 이식.
+
+artech_test2.py : 70번 줄에 이슈 해결하기. 영상이 창 숨기기 형태로 재생됨.
+
 
 
 
