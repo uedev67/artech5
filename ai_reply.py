@@ -1,11 +1,13 @@
-import threading
-from threading import Event
+import multiprocessing
+from multiprocessing import Event
 import time
 import wave
 import contextlib
+import tkinter as tk # 화면 해상도를 얻기 위해 import
 
 import cv2
 import simpleaudio as sa
+import numpy as np # 검은 배경(캔버스)을 만들기 위해 import
 
 
 def get_wav_duration_sec(wav_path: str) -> float:
@@ -16,51 +18,81 @@ def get_wav_duration_sec(wav_path: str) -> float:
         return frames / float(rate)
 
 
+
 def play_audio_wav(wav_path: str, start_event: Event):
-    """오디오 스레드: start_event 신호와 동시에 WAV 재생"""
+    """오디오 프로세스: start_event 신호와 동시에 WAV 재생"""
     wave_obj = sa.WaveObject.from_wave_file(wav_path)
-    start_event.wait()                     # 동시에 시작하기 위한 동기화 지점
+    start_event.wait()
     play_obj = wave_obj.play()
-    play_obj.wait_done()                   # 오디오가 끝날 때까지 블록
+    play_obj.wait_done()
+
 
 
 def play_video_for_duration(video_path: str, duration_sec: float, start_event: Event, window_name="Video"):
-    """비디오 스레드: start_event 이후 duration_sec 동안만 재생하고 종료"""
+    """비디오 프로세스: 1:1 비율을 유지하며 전체 화면으로 영상을 반복 재생"""
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print(f"[ERROR] 비디오를 열 수 없습니다: {video_path}")
         return
 
-    # FPS가 0으로 나올 때를 대비한 안전값
+    # 1. 화면 해상도 가져오기
+    root = tk.Tk()
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    root.destroy()
+
+    # 2. 영상 원본 크기 및 비율에 맞는 새 크기 계산
+    video_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    # 화면 높이에 맞춰 영상 크기 조절 (1:1 영상이므로 높이기준)
+    new_h = screen_height
+    new_w = new_h # 1:1 비율
+
+    # 만약 계산된 너비가 화면 너비보다 크면, 너비에 맞춰 재조정
+    if new_w > screen_width:
+        new_w = screen_width
+        new_h = new_w # 1:1 비율
+
+    # 3. 영상을 중앙에 배치하기 위한 좌표 계산
+    x_offset = (screen_width - new_w) // 2
+    y_offset = (screen_height - new_h) // 2
+    
+    # 4. 검은색 배경(캔버스) 생성
+    canvas = np.zeros((screen_height, screen_width, 3), dtype="uint8")
+
     fps = cap.get(cv2.CAP_PROP_FPS)
-    fps = fps if fps and fps > 1e-2 else 30.0
+    fps = fps if fps > 1e-2 else 30.0
     frame_interval = 1.0 / fps
 
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)  # 창 크기 조절 가능
-    cv2.resizeWindow(window_name, 960, 540)          # 보기 좋게 기본 크기 조정 (선택)
+    # 전체 화면 설정
+    cv2.namedWindow(window_name, cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty(window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
-    start_event.wait()                # 오디오와 동시 시작
-    t0 = time.perf_counter()          # 정확한 경과 시간 측정용
+    start_event.wait()
+    t0 = time.perf_counter()
     next_frame_time = t0
 
     while True:
-        # 종료 조건 1: 재생 시간 초과
         if time.perf_counter() - t0 >= duration_sec:
             break
 
-        # 프레임 읽기
         ret, frame = cap.read()
-        if not ret:                   # 영상이 더 짧다면 조기 종료
-            break
+        if not ret:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            continue
+        
+        # 5. 프레임 크기를 조절하고 검은 캔버스 중앙에 삽입
+        resized_frame = cv2.resize(frame, (new_w, new_h))
+        # 매번 새로 검은 캔버스를 만들어 붙여넣거나, 기존 캔버스의 해당 영역만 업데이트
+        canvas[y_offset:y_offset + new_h, x_offset:x_offset + new_w] = resized_frame
 
-        # 화면 표시
-        cv2.imshow(window_name, frame)
+        # 최종 결과물(캔버스)을 화면에 표시
+        cv2.imshow(window_name, canvas)
 
-        # 키 처리 (ESC로 강제 종료 가능)
         if cv2.waitKey(1) & 0xFF == 27:
             break
 
-        # FPS에 맞춰 슬립 (가벼운 프레임 타이밍 보정)
         next_frame_time += frame_interval
         sleep_for = next_frame_time - time.perf_counter()
         if sleep_for > 0:
@@ -72,28 +104,23 @@ def play_video_for_duration(video_path: str, duration_sec: float, start_event: E
 
 
 def AI_reply(video_path: str, wav_path: str) -> bool:
-    """
-    오디오(wav_path) 길이에 맞춰 비디오(video_path)를 동기 재생.
-    사용 예: ai_reply_video = AI_reply(talking_no_voice, voice)
-    성공 시 True, 실패 시 False 반환
-    """
+    # 이 부분은 변경 사항 없습니다.
     try:
         duration = get_wav_duration_sec(wav_path)
-        print(f"[INFO] 오디오 길이: {duration:.3f}초 (비디오는 이 시간까지만 재생)")
+        print(f"[INFO] 오디오 길이: {duration:.3f}초 (비디오는 이 시간 동안 반복 재생)")
 
         start_event = Event()
-        th_audio = threading.Thread(target=play_audio_wav, args=(wav_path, start_event), daemon=True)
-        th_video = threading.Thread(target=play_video_for_duration, args=(video_path, duration, start_event), daemon=True)
+        
+        p_audio = multiprocessing.Process(target=play_audio_wav, args=(wav_path, start_event), daemon=True)
+        p_video = multiprocessing.Process(target=play_video_for_duration, args=(video_path, duration + 0.5, start_event), daemon=True) # 오디오보다 영상이 0.5초 늦게 마무리
 
-        th_audio.start()
-        th_video.start()
+        p_audio.start()
+        p_video.start()
 
-        # 두 스레드가 모두 준비되었다고 판단되면 거의 동시에 시작 신호를 보냄
         start_event.set()
 
-        # 완료 대기
-        th_audio.join()
-        th_video.join()
+        p_audio.join()
+        p_video.join()
         print("[INFO] 동시 재생 완료")
         return True
     except Exception as e:
@@ -101,13 +128,13 @@ def AI_reply(video_path: str, wav_path: str) -> bool:
         return False
 
 
+
 # 테스트 실행부
 if __name__ == "__main__":
     # 테스트용 경로 설정
-    video_path = "path/to/your/video.mp4"
+    video_path = "path/to/your/1_1_video.mp4" # 1:1 비율의 영상 경로
     wav_path = "path/to/your/audio.wav"
 
-    # AI_reply 실행
     success = AI_reply(video_path, wav_path)
     if success:
         print("[TEST] AI_reply 정상 실행")

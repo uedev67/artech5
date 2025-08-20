@@ -2,7 +2,7 @@
 import threading
 from queue import Queue
 from survey_client import run_survey_server
-from button import button   # button_test.py로 변경해야함.
+from button_test import button   
 from capture import capture
 from get_first_voice import get_first_voice
 from veo3 import play_veo3
@@ -17,10 +17,58 @@ import time
 
 
 
+
+
+
+
 def samtalker(target_age, first_voice):
     face2 = run_sam(target_age)                 # SAM
     talking_video = run_sadtalker(face2, first_voice)  # SadTalker
     return talking_video
+
+
+def opening_with_button(survey_age, video_path="C:\Artech5\Image_Box\loadinig.mp4"):
+    import threading
+    from queue import Queue
+    from button_test import button
+    import subprocess
+    result_q, error_q = Queue(), Queue()
+
+    # 작업1: 아두이노 통신으로 target_age 받기
+    def button_task():
+        try:
+            target_age = button(survey_age)
+            result_q.put(target_age)
+        except Exception as e:
+            error_q.put(("button", e))
+
+    # 작업2: 오프닝 영상 재생
+    def video_task():
+        try:
+            # ffplay로 영상 재생, 영상 끝날 때까지 블로킹
+            subprocess.run([
+                "ffplay", "-autoexit", "-fs", video_path
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as e:
+            error_q.put(("video", e))
+
+    t_button = threading.Thread(target=button_task, daemon=True)
+    t_video  = threading.Thread(target=video_task, daemon=False)
+
+    t_button.start()
+    t_video.start()
+
+    # target_age 받을 때까지 대기
+    t_button.join()
+    if not error_q.empty():
+        who, err = error_q.get()
+        raise err
+    target_age = result_q.get() if not result_q.empty() else None
+
+    # 영상은 끝까지 재생해야 하므로 기다림
+    t_video.join()
+    return target_age
+
 
 # 스레딩1
 def veo3_with_samtalker(theme, target_age, first_voice):
@@ -83,6 +131,7 @@ def mic_listen_and_reply(theme,target_age,gender,whisper):
 # 실행부
 if __name__ == "__main__":
     
+
 # =============== 관객 입장 전 ========================
     survey_result = run_survey_server()   # 결과 변수는 gender, age, theme 의 이름으로 저장됨.
     print(f"[SERVER] 설문 결과: {survey_result}")
@@ -100,9 +149,10 @@ if __name__ == "__main__":
         except Exception:
             survey_age = None
      
-     
-    # 스레딩 0 ; 오프닝 + 버튼 유도
-    target_age = button(survey_age)    
+    
+    # 스레딩 0 : 오프닝 + 버튼 유도
+    target_age = opening_with_button(survey_age) 
+    target_age = target_age * 10 
     gender = survey_result.get("gender")    # 설문 결과 : 성별
     theme = survey_result.get("theme")      # 설문 결과 : 테마
     
@@ -121,6 +171,7 @@ if __name__ == "__main__":
     # ============ 스레딩2 (sadtalker영상 실행 + 오디오제거작업 + whisper 모델 미리 로드) =============
     
     talking_no_voice,whisper = play_and_remove_audio_concurrently(talking_video)
+    # 조명부에 통신 넣는 코드 추가하기
     
     
     # ======================== ai와 관객의 상호 대화 파트 ==================================
@@ -140,6 +191,8 @@ if __name__ == "__main__":
     AI_reply(talking_no_voice, voice)
 
     # 시공간이 흔들리는 연출 + 돌아갈 시간이라며 관객에게 B1을 누르도록 유도
+    
+    # 아두이노로부터 B1 관련된 메시지 받으면 체험 종료로 인식하는 코드 작성하기
     
     
 

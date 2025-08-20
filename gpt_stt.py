@@ -1,7 +1,7 @@
 
 import time
 import numpy as np
-import whisper
+import stt_listen
 import pyaudio
 import wave
 import tempfile

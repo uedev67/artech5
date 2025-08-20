@@ -18,8 +18,8 @@ from typing import Optional, Tuple, Any
 # whisper 모델을 로드하는 함수
 def whisper_loader_process(queue, model_name):
     """자식 프로세스에서 Whisper 모델을 로드하고 결과를 큐에 넣는 함수"""
-    import whisper
-    model = whisper.load_model(model_name)
+    import stt_listen
+    model = stt_listen.load_model(model_name)
     print(f"[WHISPER] 모델 로드 완료: {model_name}")
     queue.put(model)
 

@@ -256,12 +256,13 @@ def select_voice(target_age: int, gender: str, theme: str) -> Tuple[str, int, in
 # -----------------------
 
 
+
 def clova(
     target_age: int,
     gender: str,
     theme: str,
     answer: str,
-    out_path: str = r"C:\ARTECH_3\clova_voice\voice.wav",
+    out_path: str = r"C:\Artech5\Image_Box\clova_voice\voice.wav", 
     force_16k_wav: bool = True,
     volume: int = 0,
     emotion: Optional[str] = None,  # 기본 None 권장
@@ -304,7 +305,7 @@ def main():
     parser.add_argument("--gender", type=str, required=True, choices=["남자", "여자"])
     parser.add_argument("--theme", type=str, required=True, help="사이버펑크 | 지하 커뮤니티 | 화성 이주 | 에코 스마트시티")
     parser.add_argument("--text", type=str, required=True, help="합성할 문장")
-    parser.add_argument("--outdir", type=str, default=r"C:\ARTECH_3\clova_voice")  # 폴더만 지정
+    parser.add_argument("--outdir", type=str, default=r"C:\Artech5\Image_Box\clova_voice\voice.wav")  # 폴더만 지정
     parser.add_argument("--no-force-16k", action="store_true")
     parser.add_argument("--volume", type=int, default=0)
     parser.add_argument("--emotion", type=str, default=None)
