@@ -109,3 +109,5 @@ if __name__ == "__main__":
         print(f"\n✅ 최종 생성된 영상 경로: {generated_video_path}")
     else:
         print("\n❌ 영상 생성에 실패했습니다.")
+        
+        

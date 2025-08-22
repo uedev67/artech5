@@ -39,6 +39,7 @@ def play_video_vlc(video_path: str, fullscreen: bool = True):
     print(f"[VLC] 영상 재생 시작: {video_path}")
     player.play()
     
+
     if platform.system() == "Windows" and PYWIN32_AVAILABLE:
         hwnd = None
         # 창 핸들을 얻을 때까지 최대 5초간 0.1초 간격으로 반복 시도합니다.

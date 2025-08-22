@@ -1,4 +1,5 @@
 import serial, time
+import sys
 
 def open_arduino(port="COM3", baud=9600):
     ser = serial.Serial(port, baudrate=baud, timeout=0.1,
@@ -52,16 +53,44 @@ def recv_int(ser, timeout_s=10):
             time.sleep(0.1)
     return None
 
-if __name__ == "__main__":
-    ser = open_arduino("COM3", 9600)
-    # 아두이노 setup()에서 READY를 보내게 해두면 안정적
-    wait_ready(ser)  # 실패해도 계속 진행하고 싶으면 선택적으로 사용
 
-    age = 3
-    send_int(ser, age)
-    print(f"[SEND] {age} 전송")
-    time.sleep(5)
-    print("[RECV] 대기…")
-    val = recv_int(ser, timeout_s=10)
-    print("[MAIN] 받은 숫자:", val)
-    ser.close()
+# 외부에서 호출: target_age = button(survey_age)
+def button(survey_age: int, port="COM3", baud=9600, timeout_s=15) -> int:
+    ser = None
+    try:
+        ser = open_arduino(port, baud)
+        # --- ▼▼▼ 수정된 부분 ▼▼▼ ---
+        # 정보 메시지를 표준 에러(stderr)로 출력합니다.
+        print(f"[INFO] 아두이노 포트 {port} 열림", file=sys.stderr)
+        
+        send_int(ser, survey_age)
+        print(f"[INFO] 설문 나이대 {survey_age} 전송", file=sys.stderr)
+        
+        val = recv_int(ser, timeout_s=timeout_s)
+        
+        if val is None:
+            print("[ERROR] 아두이노로부터 값을 시간 내에 받지 못했습니다.", file=sys.stderr)
+            return survey_age
+            
+        return val
+
+    finally:
+        if ser and ser.is_open:
+            ser.close()
+            print(f"[INFO] 아두이노 포트 {port} 닫힘", file=sys.stderr)
+        # --- ▲▲▲ 수정된 부분 ▲▲▲ ---
+
+
+
+
+# 테스트용 코드
+if __name__ == "__main__":
+    survey_age = input("설문 나이대(예: 20): ")
+    try:
+        survey_age = int(survey_age)
+    except Exception:
+        print("[ERROR] 나이대는 숫자로 입력하세요.")
+        exit(1)
+    result = button(survey_age)
+    print(f"[RESULT] 아두이노에서 받은 값: {result}")
+
