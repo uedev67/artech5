@@ -19,6 +19,11 @@ upscale.py를 veo3_sadtalker에 이식.
 artech_test2.py : 70번 줄에 이슈 해결하기. 영상이 창 숨기기 형태로 재생됨.
 
 
+[ 8.22 새로운 이슈와 해결 사항]
+
+artech_test2.py 의 opening_with_button() 실행 에러 이슈 : 아두이노 버튼 파이시리얼 통신 + 영상 재생이 동시 실행 불가능 이슈가 있었습니다.
+
+button_test.py 최상단 import sys 누락 이슈 (추가함) // interactive_player_worker.py를 opening_with_button()에서 cmd로 호출 -> args.path 인자로(opening_with_button에 인자로 받은 지정 영상) 영상을 vlc로 재생.
 
 
 ## 소개글
