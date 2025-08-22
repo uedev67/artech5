@@ -50,7 +50,7 @@ python scripts/download_models.py
 cuda 설정처럼 개인 PC마다 상이한 설정은 따로 바꿔서 설치해주셔야 합니다.
 
 
-## 전체 흐름
+## 전체 흐름 및 기술적 해결결
 
 artech_test2.py : 전체 흐름을 제어합니다. 각 유닛 코드 파일을 불러와서 사용합니다. 
 
@@ -112,11 +112,45 @@ survey.py 에서 받은 gender, theme 값과 button_test.py(아두이노 통신)
 
 ### 멀티 3 : veo3 main + sadtalker
 
-구조는 다음과 같습니다.
-
 sadtalker_worker.py로 독립적인 프로세스를 만들어서 실행합니다. 영상 재생도 멀티 프로세싱으로 동시에 진행합니다.
 
+멀티 프로세싱을 담당하는 코드는 다음과 같습니다.
 
+video_process = multiprocessing.Process(target=play_veo3, args=(theme,)) 
+
+video_process.start()
+
+sadtalker_proc = subprocess.Popen(...)
+
+### 멀티 4 : 영상 실행 + 오디오 제거 작업
+
+동일하게 멀티 프로세싱을 사용합니다.
+
+제작된 sadtalker(인간 ai 말하는 동영상) 동영상에서 오디오만 제거하는 작업을 하는 이유는 다음과 같습니다.
+
+1. 뒤에 나올 인간 - AI 상호 대화 파트에서 매 대화마다 sadtalker 모델을 실행하면 GPU 연산의 한계로 인해 실시간 상호작용이 불가능합니다.
+
+2. 따라서 오디오만 제거한 영상을 재활용합니다. 매 대화마다 응답 + 오디오만 생성하는 작업은 6초 이내로 가능하므로 실시간 상호작용이 가능합니다.
+
+### 멀티 5 : 대화부 -  관객의 질문과 AI 응답 처리
+
+관객과 ai가 실시간 대화를 하는 부분입니다. 멀티 5는 ai가 관객의 질문에 답을 하는 부분입니다.
+
+voice = get_answer(user_input,theme,target_age,gender) 에서 모니터에 영상 재생 + 응답 생성을 동시에 진행합니다.
+
+모니터에 영상을 재생하는 이유는 응답 생성에 6초 이내의 시간이 소요되기 때문에 관객의 시각적 주의를 다른 영상으로 끌 필요가 있습니다.
+
+영상 내용은 '평행세계의 나와 통신하는데 약간의 시간이 걸림'을 표현하는데 초점을 맞췄습니다.
+
+get_answer()함수는 마이크로 user_input(관객 질문)을 받아서, target_age,gender로 알맞은 목소리를 매핑 후, theme에 따라서 각 테마에 특화된 응답을 생성하는 함수입니다.
+
+clova.py와 gpt.py의 기능이 통합된 함수입니다.
+
+### 멀티 5 : 대화부 - AI 응답 표출 및 대화 반복
+
+IsReplySuccess = AI_reply(talking_no_voice, voice) 에서 talking_no_voice(영상 부분만 재활용) + voice(새로 생성한 오디오 ai 응답)을 조합하여 모니터에 재생합니다.
+
+결과값으로 true를 반환하면 다음 줄에서 한 번 더 mic_listen() 과 get_answer()을 실행하여 관객이 ai와 대화를 주고받을 수 있게끔 설계하였습니다.
 
 
 ## 기능 설명
@@ -134,7 +168,9 @@ sadtalker.py : 노화된 얼굴 사진과 ai 목소리를 인자로 받아서 �
 
 gpt.py : openai api키를 받아서 방문자와 대화하는 역할을 합니다. 설문에서 받은 테마를 적용하여 말해줍니다.
 
-gpt_stt.py : 타임머신 안에는 마이크가 있습니다. 평행세계의 나와 대화하기 위한 수단이죠. 이 파일은 마이크로부터 방문자의 말을 받아서 gpt.py에게 넘겨줍니다.
+multi3.py : 영상에서 오디오 제거 작업을 실시합니다. artech_test2.py에서 video_playback_worker() 함수 안에서 로컬 임포트로 사용됩니다.
+
+stt_listen.py : 타임머신 안에는 마이크가 있습니다. 평행세계의 나와 대화하기 위한 수단이죠. 이 파일은 마이크로부터 방문자의 말을 받아서 gpt.py에게 넘겨줍니다.
 
 gpt_clova_tts.py : 평행세계의 나의 목소리를 구현합니다. 100가지가 넘는 다양한 음성으로 성별, 나이대를 지정할 수 있습니다. 네이버 클로바 tts를 사용하였습니다.
 
