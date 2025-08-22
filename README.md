@@ -31,6 +31,8 @@ button_test.py 최상단 import sys 누락 이슈 (추가함) // interactive_pla
 미래는 어떤 모습일까요? 기술의 고도화와 노동의 종말, 육체의 편안함, 사고과정의 퇴행, 혹은 인간의 욕심이 낳은 전쟁으로 피난처에서 모여 살 수도 있습니다.
 선택지는 방문자분께 드리죠. 당신이 원하는 미래의 모습으로 떠나보세요. 그곳에선 또다른 내가 있을겁니다.
 
+
+
 ## upscale.py 사용 전 세팅(파워쉘 명령어)
 git clone https://github.com/xinntao/Real-ESRGAN.git
 cd Real-ESRGAN
@@ -43,11 +45,11 @@ python scripts/download_models.py
 
 아나콘다 파이썬 3.8 가상환경에서 실행하세요.
 
-Artech5.py : 전체 흐름을 제어합니다. 각 유닛 코드 파일을 불러와서 사용합니다. 
+artech_test2.py : 전체 흐름을 제어합니다. 각 유닛 코드 파일을 불러와서 사용합니다. 
 
 survey.py + survey_client.py : 방문자가 밀실 입장 전, 설문지를 작성합니다. 성별, 나이대, 테마를 선택합니다. 설문 결과는 타임머신 안에서의 콘텐츠에 영향을 줍니다.
 
-button.py : 사용자로부터 원하는 미래 시기를 선택받습니다. 6층을 누르면 60대의 나를 만날 수 있습니다.
+button_test.py : 사용자로부터 원하는 미래 시기를 선택받습니다. 6층을 누르면 60대의 나를 만날 수 있습니다.
 
 capture.py : 사용자의 얼굴 정면을 캡쳐합니다.
 
