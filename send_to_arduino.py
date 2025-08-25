@@ -22,11 +22,7 @@ def send_to_arduino(data, port='COM3', baudrate=9600):
 if __name__ == "__main__":
     
     
-    # 함수 호출로 의도가 명확해짐
-    is_success = send_to_arduino(10)
+     send_to_arduino(10)
     
-    if is_success:
-        print("아두이노로 데이터 전송 완료")
-    else:
-        print("아두이노 통신 실패")
+    # artech_test2.py에서 이렇게 호출하면 된다.
         
