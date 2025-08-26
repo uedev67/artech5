@@ -43,18 +43,29 @@ def opening_with_button(survey_age, video_path=r"C:\Artech5\Image_Box\loading.mp
     main_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     worker_path = os.path.join(main_path, 'interactive_player_worker.py')
     
-    # [수정] --age 인자를 제거합니다.
-    command = [sys.executable, worker_path, '--path', video_path]
+    # [수정] --age 인자를 다시 추가하여 survey_age 값을 전달합니다.
+    # [이유] interactive_player_worker.py 스크립트는 --age 인자를 필수로 요구합니다.
+    #       이 값을 전달해야 워커가 정상적으로 실행되고, 버튼 입력을 처리할 수 있습니다.
+    #       subprocess로 전달하는 인자는 모두 문자열이어야 하므로 str()로 변환합니다.
+    command = [sys.executable, worker_path, '--path', video_path, '--age', str(survey_age)]
     
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = proc.communicate()
 
     if proc.returncode == 0 and stdout:
-        target_age = int(stdout.decode().strip())
-        print(f"[SERVER] 버튼 입력을 통해 새로운 나이대를 받았습니다: {target_age}")
-        return target_age
+        try:
+            target_age = int(stdout.decode().strip())
+            print(f"[SERVER] 버튼 입력을 통해 새로운 나이대를 받았습니다: {target_age}")
+            return target_age
+        except ValueError:
+            print(f"[SERVER] Worker로부터 예상치 못한 값을 받았습니다: {stdout.decode().strip()}")
+            return survey_age
     else:
-        print(f"[SERVER] 버튼 입력 없이 영상이 종료되었습니다. stderr: {stderr.decode('utf-8', 'ignore').strip()}")
+        print(f"[SERVER] 버튼 입력 없이 영상이 종료되었거나 Worker에서 오류가 발생했습니다.")
+        # 오류 디버깅을 위해 stderr를 출력하는 것이 좋습니다.
+        error_message = stderr.decode('utf-8', 'ignore').strip()
+        if error_message:
+            print(f"[SERVER] Worker 오류 내용: {error_message}")
         return survey_age
 
 
@@ -89,9 +100,10 @@ def run_artech5():
     survey_age = survey_result.get("age")
     if isinstance(survey_age, str) and survey_age.endswith("대"):
         try:
+            # "20대" -> 20 -> 2 로 변환
             survey_age = int(int(survey_age.replace("대", "")) / 10)
         except Exception:
-            survey_age = None
+            survey_age = 2 # 기본값 설정
     
     print("버튼을 눌러주세요")
     target_age = opening_with_button(survey_age) 
