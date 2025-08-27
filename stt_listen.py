@@ -1,40 +1,42 @@
-# audio_recorder_v2.py
-
 import multiprocessing
 import time
 import os
 import pyaudio
 import wave
 import tempfile
+import vlc
 
-# PyAudio 녹음 설정
+# PyAudio 녹음 설정 (변경 없음)
 CHUNK = 2048
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 16000  # Whisper 권장 샘플레이트
+RATE = 16000
 
-
-
-# --- 헬퍼 함수: 영상 재생 ---
-def play_fullscreen_video(video_path):
-
-    import vlc
-
-
-
+# --- 헬퍼 함수: 영상 재생 (변경 없음) ---
+def play_fullscreen_video(video_path, subtitle_text=None):
     if not os.path.isfile(video_path):
         print(f"[오류] 영상 파일을 찾을 수 없습니다: {video_path}")
         return
 
-    # --input-repeat=-1 옵션으로 무한 반복 설정
-    instance = vlc.Instance("--no-xlib --quiet --input-repeat=-1")
+    vlc_options = [
+        "--no-xlib", "--quiet", "--input-repeat=-1", "--sub-source=marq"
+    ]
+    instance = vlc.Instance(" ".join(vlc_options))
     player = instance.media_player_new()
     media = instance.media_new(video_path)
     player.set_media(media)
+
+    if subtitle_text:
+        player.video_set_marquee_int(vlc.VideoMarqueeOption.Enable, 1)
+        player.video_set_marquee_string(vlc.VideoMarqueeOption.Text, subtitle_text.encode('utf-8'))
+        player.video_set_marquee_int(vlc.VideoMarqueeOption.Position, 8)
+        player.video_set_marquee_int(vlc.VideoMarqueeOption.Size, 60)
+        player.video_set_marquee_int(vlc.VideoMarqueeOption.Color, 0xFFFFFF)
+        player.video_set_marquee_int(vlc.VideoMarqueeOption.Timeout, 0)
+
     player.set_fullscreen(True)
     player.play()
 
-    # 프로세스가 종료 신호를 받을 때까지 대기
     try:
         while True:
             time.sleep(1)
@@ -43,13 +45,8 @@ def play_fullscreen_video(video_path):
     finally:
         player.stop()
 
-
-
-# --- 헬퍼 함수: 오디오 녹음 (gpt_stt.py 로직 통합) ---
+# --- 헬퍼 함수: 오디오 녹음 (변경 없음) ---
 def record_audio_pyaudio(duration, sample_rate):
-    """
-    PyAudio를 사용하여 마이크에서 오디오를 녹음하고 임시 파일 경로를 반환합니다.
-    """
     p = pyaudio.PyAudio()
     stream = p.open(format=FORMAT, channels=CHANNELS, rate=sample_rate,
                     input=True, frames_per_buffer=CHUNK)
@@ -74,23 +71,17 @@ def record_audio_pyaudio(duration, sample_rate):
 
     return temp_wav.name
 
-
-
-# --- 메인 실행 함수 ---
-def mic_listen(loading_video: str, ready_video: str, duration: int = 5) -> str:
-    """
-    모델 로딩, 녹음 대기, 음성 변환 상태를 별도의 영상으로 표시하며 음성 인식을 수행합니다.
-    """
+# --- 메인 실행 함수 (수정됨) ---
+def mic_listen(loading_video: str, ready_video: str, duration: int = 5, subtitle_text: str = None) -> str:
     print("--- 음성 인식 시퀀스 시작 ---")
-
-    # 1. '로딩 중' 영상 재생 프로세스 시작
-    loading_process = multiprocessing.Process(target=play_fullscreen_video, args=(loading_video,), daemon=True)
+    
+    # 1. '로딩 중' 영상 재생 (자막 표시 O)
+    loading_process = multiprocessing.Process(target=play_fullscreen_video, args=(loading_video, subtitle_text), daemon=True)
     loading_process.start()
     print(f"[시스템] 로딩 영상 재생 시작: {loading_video}")
 
-
     import whisper
-    # 2. Whisper 모델 로드 (시간이 가장 오래 걸리는 작업)
+    # 2. Whisper 모델 로드
     print("[Whisper] 모델을 로드하는 중입니다...")
     model = whisper.load_model("large-v3")
     print("[Whisper] 모델 로드 완료.")
@@ -100,7 +91,8 @@ def mic_listen(loading_video: str, ready_video: str, duration: int = 5) -> str:
     loading_process.join()
     print("[시스템] 로딩 영상 종료.")
 
-    # 4. '녹음 준비 완료' 영상 재생 프로세스 시작
+    # 4. '녹음 준비 완료' 영상 재생 (자막 표시 X)
+    # [수정] 자막을 표시하지 않도록 subtitle_text 인자 제거
     ready_process = multiprocessing.Process(target=play_fullscreen_video, args=(ready_video,), daemon=True)
     ready_process.start()
     print(f"[시스템] 녹음 준비 완료 영상 재생 시작: {ready_video}")
@@ -113,25 +105,15 @@ def mic_listen(loading_video: str, ready_video: str, duration: int = 5) -> str:
     ready_process.join()
     print("[시스템] 녹음 준비 완료 영상 종료.")
 
-    # --- 👇 [변경] 음성 변환 중 '로딩' 영상 재생 ---
-    # 7. 음성 변환을 위한 '로딩 중' 영상 재생 프로세스 시작
-    transcribing_process = multiprocessing.Process(target=play_fullscreen_video, args=(loading_video,), daemon=True)
-    transcribing_process.start()
-    print(f"[시스템] 음성 처리 중 영상 재생 시작: {loading_video}")
-
-    # 8. 녹음된 음성을 텍스트로 변환
+    # [삭제] 음성 변환 중 영상을 재생하던 7, 8, 9번 과정 제거
+    
+    # 7. 녹음된 음성을 텍스트로 변환
     print("[Whisper] 음성 인식을 시작합니다...")
     result = model.transcribe(audio_path, language="ko")
     transcribed_text = result["text"]
     print(f"[Whisper] 변환 결과: {transcribed_text}")
-
-    # 9. 음성 변환 완료 후 '로딩 중' 영상 종료
-    transcribing_process.terminate()
-    transcribing_process.join()
-    print("[시스템] 음성 처리 중 영상 종료.")
-    # --- 👆 [변경] 여기까지 ---
-
-    # 10. 임시 녹음 파일 삭제
+    
+    # 8. 임시 녹음 파일 삭제
     os.remove(audio_path)
 
     print("--- 음성 인식 시퀀스 완료 ---\n")
