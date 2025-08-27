@@ -8,6 +8,7 @@ from flask import Flask, request
 from threading import Thread, Event
 from queue import Queue
 
+
 # --- 설정 ---
 # 데스크탑의 IP 주소와 포트
 DESKTOP_IP = '127.0.0.1'  # 실제 데스크탑의 IP 주소로 변경해야 합니다.
