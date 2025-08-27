@@ -16,7 +16,6 @@ from ai_reply import AI_reply
 
 
 
-
 def opening_with_button(survey_age, video_path=r"C:\Artech5\Image_Box\loading.mp4"):
     """
     영상 재생과 버튼 입력을 동시에 처리하는 통합 Worker('interactive_player_worker.py')를 실행합니다.
@@ -191,3 +190,4 @@ if __name__ == "__main__":
     # 아두이노로부터 B1 관련된 메시지 받으면 체험 종료로 인식하는 코드 작성하기
     
     
+
