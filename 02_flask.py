@@ -22,6 +22,7 @@ from get_answer import get_answer
 from ai_reply import AI_reply
 
 
+
 def send_to_server(data, host='127.0.0.1', port=5001):
     """
     [헬퍼 함수] Flask 웹 서버로 제어 명령을 전송합니다. (데스크탑 -> 노트북)
