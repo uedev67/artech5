@@ -44,16 +44,32 @@ def run_sam(target_age, face_path=None):
     if target_age:
         input_data["target_age"] = target_age
 
-    # 3. SAM API 호출
+    # 3. SAM API 호출 (수정된 버전)
     try:
         response = requests.post(
             "http://localhost:5000/predictions",
-            json={"input": input_data}
+            json={"input": input_data},
+            timeout=300  # 선택 사항: 응답이 길어질 경우를 대비해 타임아웃 설정
         )
-        result = response.json()
-    except Exception as e:
-        print(f"[ERROR] SAM API 호출 실패: {e}")
+        # 요청이 성공했는지 상태 코드로 먼저 확인 (200 = 성공)
+        if response.status_code == 200:
+            result = response.json()
+        else:
+            # 실패 시, 상태 코드와 서버가 보낸 실제 응답 내용을 출력
+            print(f"❌ SAM API 요청 실패 (HTTP Status: {response.status_code})")
+            print("👇 서버 응답 내용:")
+            print(response.text) # 서버의 에러 로그(HTML 또는 텍스트)를 그대로 출력
+            return None
+
+    except requests.exceptions.RequestException as e:
+        print(f"[ERROR] SAM API 네트워크 연결 실패: {e}")
         return None
+    except ValueError as e: # response.json() 실패 시 발생하는 에러
+        print(f"[ERROR] 서버 응답이 올바른 JSON 형식이 아닙니다: {e}")
+        print("👇 서버 응답 내용:")
+        print(response.text)
+        return None
+
 
     # 4. JSON 안에서 base64 이미지 찾기
     final_base64 = find_base64(result)
