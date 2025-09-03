@@ -63,18 +63,15 @@ def play_loading_video(stop_event: multiprocessing.Event, video_path: str):
     cap.release()
     cv2.destroyAllWindows()
 
-def run_ai_tasks(queue: multiprocessing.Queue, user_input, theme, target_age, gender):
-    """
-    백그라운드에서 GPT와 Clova API를 순차적으로 호출하고,
-    결과(음성 파일 경로)를 큐(Queue)에 넣습니다.
-    """
+def run_ai_tasks(queue: multiprocessing.Queue, user_input, theme, target_age, speaker,name):
+
     try:
         print("[AI 작업] GPT에 답변을 요청합니다...")
-        answer = ask_gpt(user_input, theme)
+        answer = ask_gpt(user_input, theme,name)
         print(f"[AI 작업] GPT 답변: {answer}")
         
         print("[AI 작업] Clova 음성 합성을 요청합니다...")
-        voice_path = clova(target_age, gender, theme, answer)
+        voice_path = clova(target_age, answer, speaker=speaker)
         print(f"[AI 작업] Clova 음성 합성 완료: {voice_path}")
         
         queue.put(voice_path) # 성공 시, 결과값을 큐에 저장
@@ -82,20 +79,9 @@ def run_ai_tasks(queue: multiprocessing.Queue, user_input, theme, target_age, ge
         print(f"[AI 작업 오류] AI 작업 중 오류 발생: {e}")
         queue.put(None) # 실패 시, None을 큐에 저장
 
-def get_answer(user_input: str, theme: str, target_age: int, gender: str) -> str:
-    """
-    로딩 영상을 재생하면서 동시에 GPT 답변과 Clova 음성 합성을 수행합니다.
-    
-    Args:
-        user_input (str): 사용자의 음성 인식 텍스트.
-        theme (str): 설문조사에서 선택된 테마.
-        target_age (int): 대상 연령대.
-        gender (str): 대상 성별.
+def get_answer(user_input: str, theme: str, target_age : int, gender: str, speaker: str, name: str) -> str:
 
-    Returns:
-        str: 생성된 음성 파일의 경로. 오류가 발생하면 None을 반환합니다.
-    """
-    loading_video_path = r"C:\Artech5\Image_Box\loading.mp4"
+    loading_video_path = r"C:\Artech5\Image_Box\GPT_Loading.mp4"
     
     stop_event = multiprocessing.Event()
     result_queue = multiprocessing.Queue()
@@ -109,7 +95,7 @@ def get_answer(user_input: str, theme: str, target_age: int, gender: str) -> str
     # 2. AI 작업(GPT, Clova) 프로세스 생성
     ai_process = multiprocessing.Process(
         target=run_ai_tasks, 
-        args=(result_queue, user_input, theme, target_age, gender)
+        args=(result_queue, user_input, theme, target_age, speaker,name)
     )
     
     # 두 프로세스 동시 시작

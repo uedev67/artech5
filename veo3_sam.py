@@ -10,7 +10,7 @@ from sam import run_sam # sam.py의 run_sam 함수를 직접 임포트
 # veo3 인트로 영상 재생 함수
 def play_veo3_intro():
 
-    video_path = r"C:\Artech5\Image_Box\veo3\eco_smart.mp4"
+    video_path = r"C:\Artech5\Image_Box\veo3\인트로 시계 1080.mp4"
     if not os.path.exists(video_path):
         print(f"[VLC Player Error] 인트로 영상을 찾을 수 없습니다: {video_path}")
         return
