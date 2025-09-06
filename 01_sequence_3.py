@@ -25,8 +25,6 @@ from get_subtitle import get_subtitle
 from stt_listen import mic_listen
 from get_answer import get_answer
 from ai_reply import AI_reply
-from button_test import button
-# --- [삭제] run_black_screen_process 임포트 제거 ---
 from black_screen_simple import run_black_screen_simple
 
 
@@ -374,4 +372,5 @@ def run_artech5():
 
 if __name__ == "__main__":
     run_artech5()
+
 
