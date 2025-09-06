@@ -1,6 +1,9 @@
 # 아트텍 5조 밀실사건전담반
-부산대 2025 ARTECH 'AI와 인간'을 주제로 하는 5조 밀실사건전담반의 소프트웨어 파트입니다.
-artech_test2.py를 읽어주세요. 콘텐츠 전반을 관리하는 핵심 파일입니다.
+부산대 2025 ARTECH 'AI와 인간'을 주제로 대상(1등)을 받은 5조 밀실사건전담반의 소프트웨어 파트입니다.
+실행부는 Main 폴더에 있습니다.
+
+작업 기간 : 2025.06.29 ~ 2025.08.31
+<img width="1400" height="1050" alt="image" src="https://github.com/user-attachments/assets/0d776055-443f-48db-a2eb-f008aafbc5ff" />
 
 
 ## 팀원 안내 매뉴얼
