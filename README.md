@@ -37,15 +37,6 @@ main_process.py 를 실행합니다.(그리고 노트북에서 설문 결과를 
 선택지는 방문자분께 드리죠. 당신이 원하는 미래의 모습으로 떠나보세요. 그곳에선 또다른 내가 있을겁니다.
 
 
-
-## upscale.py 사용 전 세팅(파워쉘 명령어)
-git clone https://github.com/xinntao/Real-ESRGAN.git
-cd Real-ESRGAN
-pip install -r requirements.txt
-pip install -e .
-python scripts/download_models.py
-
-
 ## 환경 설정
 
 아나콘다 파이썬 3.8 가상환경에서 실행하세요. requirements.txt를 참고해주세요. 
