@@ -140,7 +140,7 @@ def opening_with_button(survey_age, ser, video_path=r"C:\Artech5\Image_Box\openi
 
 
 def video_playback_worker(video_path, result_queue):
-    # ... (기존 코드와 동일, 변경 없음)
+    # 로컬 임포트
     from multi3 import play_and_strip_audio
     try:
         output_path = play_and_strip_audio(video_path)
@@ -150,7 +150,7 @@ def video_playback_worker(video_path, result_queue):
     
 
 def ending_with_button(ser, video_path=r"C:\Artech5\Image_Box\Emergency.mp4"):
-    # ... (기존 코드와 동일, 변경 없음)
+
     print("[SERVER] 엔딩 시퀀스를 시작합니다.")
     vlc_proc = None
     is_end_signal_received = False
@@ -194,7 +194,7 @@ def ending_with_button(ser, video_path=r"C:\Artech5\Image_Box\Emergency.mp4"):
     return True
 
 
-# --- [수정] command_queue 파라미터 제거 ---
+
 def run_sequence_1():
     ser = None
     port = 'COM3'
@@ -251,7 +251,7 @@ def run_sequence_1():
             print("[ARDUINO] 시퀀스 1: 시리얼 포트를 닫았습니다.")
 
 
-# --- [핵심 수정] 함수 구조 변경 ---
+
 def run_artech5():
     multiprocessing.freeze_support()
     multiprocessing.set_start_method('spawn', force=True)
@@ -259,8 +259,8 @@ def run_artech5():
     active_processes = []
 
     try:
-        # --- [수정] 프로그램 시작과 함께 블랙스크린 실행 ---
-        print("[SYSTEM] 단순 블랙스크린을 시작합니다.")
+
+        print("[SYSTEM] 블랙스크린을 시작합니다.")
         black_screen_simple_proc = Process(target=run_black_screen_simple, daemon=True)
         black_screen_simple_proc.start()
         active_processes.append(black_screen_simple_proc)
@@ -367,6 +367,7 @@ def run_artech5():
 
 if __name__ == "__main__":
     run_artech5()
+
 
 
 
