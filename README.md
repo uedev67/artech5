@@ -46,17 +46,14 @@ main_process.py 를 실행합니다.(그리고 노트북에서 설문 결과를 
 cuda 설정처럼 개인 PC마다 상이한 설정은 따로 바꿔서 설치해주셔야 합니다.
 
 
-## 전체 흐름 및 기술적 해결결
+## 전체 흐름 및 기술적 해결
 
-01_sequence.py : 전체 흐름을 제어합니다. 각 유닛 코드 파일을 불러와서 사용합니다. 
+파일 실행 순서는 아래와 같습니다. 
+<img width="861" height="258" alt="스크린샷 2025-09-07 015325" src="https://github.com/user-attachments/assets/1ed520a8-cdf6-4c74-805a-8c45ae882efb" />
 
-### 멀티 프로세싱 방식
+그리고 전체 흐름을 제어하는 0.main_process.py 의 실행 흐름은 다음과 같습니다.
+<img width="1909" height="608" alt="스크린샷 2025-09-07 015320" src="https://github.com/user-attachments/assets/9741e610-15dc-4dd4-a67e-00df96e3fc11" />
 
-multiprocessing.set_start_method('spawn', force=True) 를 초기에 선언합니다. 
-
-fork 대신에 spawn방식을 택한 이유는 sam, sadtalker의 라이브러리 충돌을 피하기 위해서입니다.
-
-비록 속도는 fork방식보다 느리지만, 부모 프로세스 전체를 복제하여 충돌을 일으키지 않기 위해서 spawn 방식을 채택했습니다.
 
 ### 관객 입장 전
 
@@ -70,35 +67,20 @@ survey.py에서는 flask 웹 서버가 0.0.0.0:5000 포트를 열어서 클라�
 
 ### 관객 입장 후 
 
-메인 콘텐츠가 진행됩니다.
+메인 콘텐츠가 진행됩니다. 0.main_process.py의 흐름을 서술하겠습니다.
 
-### 멀티 1 : 오프닝 영상 + 엘리베이터 버튼 입력(아두이노 시리얼 통신)
+### 베이스 : 블랙스크린을 배경으로 합니다.
 
-기본적인 구조는 다음과 같습니다.
+메인 파일은 여러 단계로 나뉘며, 각각의 단계가 순차적으로 실행됩니다. 다음 단계로 넘어갈 때 모니터에 1~2초간 콘텐츠와 무관한 화면(vs code 화면)이 뜹니다. 이는 콘텐츠 경험을 저하시키므로 try-finally문을 써서 배경을 검은 화면으로 깔아두었습니다.
 
-opening_with_button() 에서 subprocess.Popen로 command를 실행 
+### run_sequence_1() 함수 : 설문 값 받기 + 오프닝 + 아두이노 통신(버튼값 받기)
 
--> 적절한 cmd로 interactive_player_worker.py 를 별도의 프로세스로 실행
+콘텐츠가 진행되는 초기 부분입니다. 노트북으로부터 설문값을 받으면, 오프닝을 시작합니다.
 
-컴퓨터는 artech_test2.py(메인 실행 파일)로부터 interactive_player_worker.py(오프닝 + 버튼 입력 대기)를 안전하게 분리합니다.
-
-이후 threading을 사용하여 interactive_player_worker.py 내에서 오프닝 영상 재생과 버튼 입력 대기를 동시에 진행합니다.
-
-버튼이 눌려서 값을 받으면 재생 중인 영상을 강제로 종료시키고 다음 단계로 넘어갑니다.
-
-이러한 구조를 사용하는 이유는, 파이썬의 Global Interpreter Lock 으로 인한 블로킹 현상 때문입니다.(하나의 작업이 끝날 때까지 나머지 작업들이 무한 대기)
-
-멀티 프로세싱 대신에 스레딩을 사용한 이유는 아두이노 시리얼 통신은 단순 Input/Output 작업이기 때문입니다. 대부분이 통신 대기 시간이므로 자원을 공유해도 큰 문제가 없습니다.
+오프닝 영상을 모니터에 재생하면서 동시에 아두이노로부터 특정 값을 받기 위해 대기합니다.
 
 
-### 정보 처리 : 첫 대사 결정 + 얼굴 사진 촬영
-
-survey.py 에서 받은 gender, theme 값과 button_test.py(아두이노 통신)에서 받은 target_age 값으로 ai 목소리를 결정합니다. 예를 들어 '남자' 관객이 '사이버펑크' 테마로 본인의 '60대'의 모습을 원한다면, 그에 맞는 목소리를 get_first_voice.py로 결정해줍니다.
-
-그리고 capture.py에서 받은 face1값은 추후 sam, sadtalker에서 이미지 처리에 사용됩니다.
-
-
-### 멀티 2 : veo3 intro + sam
+### 파트1 : veo3 intro + sam
 
 멀티 프로세싱과 큐를 통해 google veo3 ai 영상 재생과 sam(face1 관객 얼굴 사진을 타깃 나이대로 노화) 작업을 동시에 진행합니다.
 
@@ -106,7 +88,7 @@ survey.py 에서 받은 gender, theme 값과 button_test.py(아두이노 통신)
 
 큐(Queue) : sam 모델은 독립된 프로세스라 메인 프로세스(artech_test2.py)가 이를 확인하지 못합니다. 이때, sam의 반환 결과를 Queue에 넣어주면 메인 프로세스가 종료 시점을 판단할 수 있습니다.
 
-### 멀티 3 : veo3 main + sadtalker
+### 파트2 : veo3 main + sadtalker
 
 sadtalker_worker.py로 독립적인 프로세스를 만들어서 실행합니다. 영상 재생도 멀티 프로세싱으로 동시에 진행합니다.
 
@@ -118,9 +100,9 @@ video_process.start()
 
 sadtalker_proc = subprocess.Popen(...)
 
-### 멀티 4 : 영상 실행 + 오디오 제거 작업
+### 파트3 : 영상 실행 + 오디오 제거 작업
 
-동일하게 멀티 프로세싱을 사용합니다.
+동일하게 멀티 프로세싱을 사용합니다. 코드 상으로는 video_playback_worker() 함수입니다.(multi3.py에서 임포트)
 
 제작된 sadtalker(인간 ai 말하는 동영상) 동영상에서 오디오만 제거하는 작업을 하는 이유는 다음과 같습니다.
 
@@ -128,11 +110,19 @@ sadtalker_proc = subprocess.Popen(...)
 
 2. 따라서 오디오만 제거한 영상을 재활용합니다. 매 대화마다 응답 + 오디오만 생성하는 작업은 6초 이내로 가능하므로 실시간 상호작용이 가능합니다.
 
-### 멀티 5 : 대화부 -  관객의 질문과 AI 응답 처리
+### 파트4 : 대화부(mic_listen) - 관객이 말하는 파트
 
-관객과 ai가 실시간 대화를 하는 부분입니다. 멀티 5는 ai가 관객의 질문에 답을 하는 부분입니다.
+stt 모델을 openai의 whisper large-v3 모델을 사용합니다. 하지만 이는 매우 무거운 모델이므로 로딩하는데 시간이 소요됩니다. 
 
-voice = get_answer(user_input,theme,target_age,gender) 에서 모니터에 영상 재생 + 응답 생성을 동시에 진행합니다.
+따라서 로딩 중 영상 1개, 관객이 마이크로 말하는 동안을 나타내는 영상 1개 총 2개의 영상을 연이어 모니터로 재생합니다.
+
+자막 기능도 추가했는데, 이는 관객이 미래의 자신과 대화할 때 무슨 말을 해야할 지 몰라서 가만히 있는 경우를 방지하기 위함입니다.
+
+### 파트4 : 대화부(get_answer) -  AI 응답 처리
+
+관객과 ai가 실시간 대화를 하는 부분입니다. 파트4는 ai가 관객의 질문에 답을 하는 부분입니다.
+
+voice = get_answer(user_input, theme, target_age, gender, speaker,name) 에서 모니터에 영상 재생 + 응답 생성을 동시에 진행합니다.
 
 모니터에 영상을 재생하는 이유는 응답 생성에 6초 이내의 시간이 소요되기 때문에 관객의 시각적 주의를 다른 영상으로 끌 필요가 있습니다.
 
@@ -142,45 +132,38 @@ get_answer()함수는 마이크로 user_input(관객 질문)을 받아서, targe
 
 clova.py와 gpt.py의 기능이 통합된 함수입니다.
 
-### 멀티 5 : 대화부 - AI 응답 표출 및 대화 반복
+### 파트4 : 대화부(Ai_reply) - AI 응답 표출 및 대화 반복
 
 IsReplySuccess = AI_reply(talking_no_voice, voice) 에서 talking_no_voice(영상 부분만 재활용) + voice(새로 생성한 오디오 ai 응답)을 조합하여 모니터에 재생합니다.
 
 결과값으로 true를 반환하면 다음 줄에서 한 번 더 mic_listen() 과 get_answer()을 실행하여 관객이 ai와 대화를 주고받을 수 있게끔 설계하였습니다.
 
 
-## 기능 설명
-
-survey.py + survey_client.py : 방문자가 밀실 입장 전, 설문지를 작성합니다. 성별, 나이대, 테마를 선택합니다. 설문 결과는 타임머신 안에서의 콘텐츠에 영향을 줍니다.
-
-button_test.py : 사용자로부터 원하는 미래 시기를 선택받습니다. 6층을 누르면 60대의 나를 만날 수 있습니다.
-
-capture.py : 사용자의 얼굴 정면을 캡쳐합니다.
+## 깃허브 오픈소스 사용
 
 sam.py :  앞서 누른 버튼값 정보로 사용자의 얼굴을 노화시킵니다. 미래의 나를 만나는 초석이죠. sam 모델은 깃허브 오픈소스를 사용했습니다. 
 https://github.com/yuval-alaluf/SAM 윈도우 환경에서 충돌이 발생할 수 있으니, Docker에서 컨테이너를 생성해서 사용하는 것을 권장합니다.
 
 sadtalker.py : 노화된 얼굴 사진과 ai 목소리를 인자로 받아서 사람이 말하는 합성 영상을 제작합니다. sadtalker모델도 깃허브 오픈소스를 사용했습니다. https://github.com/OpenTalker/SadTalker
 
-gpt.py : openai api키를 받아서 방문자와 대화하는 역할을 합니다. 설문에서 받은 테마를 적용하여 말해줍니다.
-
-multi3.py : 영상에서 오디오 제거 작업을 실시합니다. artech_test2.py에서 video_playback_worker() 함수 안에서 로컬 임포트로 사용됩니다.
-
-stt_listen.py : 타임머신 안에는 마이크가 있습니다. 평행세계의 나와 대화하기 위한 수단이죠. 이 파일은 마이크로부터 방문자의 말을 받아서 gpt.py에게 넘겨줍니다.
-
-gpt_clova_tts.py : 평행세계의 나의 목소리를 구현합니다. 100가지가 넘는 다양한 음성으로 성별, 나이대를 지정할 수 있습니다. 네이버 클로바 tts를 사용하였습니다.
-
-
 
 ## 사용된 기술들
-
-멀티 프로세싱 + 로컬 임포트 : 동시에 여러 일을 해야하는 타이밍이 있습니다. 그중 하나가 veo3 + samtalker 실행입니다. 두 작업 모두 GPU를 사용합니다. 스레딩으로는 윈도우 6 핸들 에러가 발생합니다.
+동시에 여러 일을 해야하는 타이밍이 있습니다. 그중 하나가 veo3 + samtalker 실행입니다. 두 작업 모두 GPU를 사용합니다. 스레딩으로는 윈도우 6 핸들 에러가 발생합니다.
 이를 방지하기 위해서 2가지 기술을 사용합니다.
-1. 멀티 프로세싱 : veo3 영상 재생과 sam + sadtalker 작업을 분리된 2개의 독립 공간에서 실행하도록 합니다. 여기서 두 task의 충돌을 예방합니다. 실행 방식은 multiprocessing.set_start_method('spawn') 으로 정합니다.
-2. 로컬 임포트 : from 파일명 import 함수명 은 보통 파일의 최상단에 선언합니다. sam,sadtalker를 최상단에 import하면 앞서 선언된 실행 방식과 충돌이 일어날 수 있습니다. 따라서 로컬 임포트하여 필요할 때만 실행되도록 하였습니다.
+
+### 멀티 프로세싱 방식
+
+veo3 영상 재생과 sam + sadtalker 작업을 분리된 2개의 독립 공간에서 실행하도록 합니다. 여기서 두 task의 충돌을 예방합니다.
+
+multiprocessing.set_start_method('spawn', force=True) 를 초기에 선언합니다. 
+
+fork 대신에 spawn방식을 택한 이유는 sam, sadtalker의 라이브러리 충돌을 피하기 위해서입니다.
+
+비록 속도는 fork방식보다 느리지만, 부모 프로세스 전체를 복제하여 충돌을 일으키지 않기 위해서 spawn 방식을 채택했습니다.
 
 
+###  로컬 임포트
 
-## 기타 정보
-네이버 콘솔(몰라도 됩니다.)
-https://console.ncloud.com/naver-service/application  
+from 파일명 import 함수명 은 보통 파일의 최상단에 선언합니다. sam,sadtalker를 최상단에 import하면 앞서 선언된 실행 방식과 충돌이 일어날 수 있습니다. 따라서 로컬 임포트하여 필요할 때만 실행되도록 하였습니다.
+
+
