@@ -4,7 +4,13 @@
 실행부는 Main 폴더에 있습니다.
 
 작업 기간 : 2025.06.29 ~ 2025.08.31
-<img width="1400" height="1050" alt="image" src="https://github.com/user-attachments/assets/0d776055-443f-48db-a2eb-f008aafbc5ff" />
+<details>
+  <summary>🖼️ 프로젝트 미리보기 (클릭하여 펼치기)</summary>
+  <p align="center">
+    <img width="1400" height="1050" alt="image" src="https://github.com/user-attachments/assets/0d776055-443f-48db-a2eb-f008aafbc5ff" />
+    <img width="1050" height="1400" alt="image" src="https://github.com/user-attachments/assets/523a6401-35a8-442e-935d-7748b38a244b" />
+  </p>
+</details>
 
 
 ## 관객 안내 매뉴얼
