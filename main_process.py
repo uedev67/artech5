@@ -1,4 +1,3 @@
-# artech_test2.py (수정된 버전)
 
 import multiprocessing
 import subprocess
@@ -8,16 +7,12 @@ import time
 import serial
 import threading
 from multiprocessing import Process, Queue 
-# --- 필요한 모듈 Import ---
-# --- [수정] black_screen_manager.py의 정확한 위치를 지정 ---
+
+# 다른 파이썬 파일들도 main_process.py 와 같은 폴더에 넣어주세요! 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
-# --- [오류 수정] vlc 모듈은 threading 전에 초기화하면 충돌 가능성이 있으므로, 필요할 때 함수 내에서 import 하도록 변경
-# import vlc 
-
 from survey_client import run_survey_server
-
 from veo3_sam import run_veo3_with_sam
 from veo3_sadtalker import veo3_with_sadtalker
 from get_first_voice import get_first_voice
@@ -372,5 +367,6 @@ def run_artech5():
 
 if __name__ == "__main__":
     run_artech5()
+
 
 
