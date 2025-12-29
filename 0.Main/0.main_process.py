@@ -30,7 +30,7 @@ def send_int(ser, n: int):
         ser.flush()
         print(f"[ARDUINO] 데이터 전송: {n}")
     except serial.SerialException as e:
-        print(f"❌ [ERROR] 데이터 전송 실패: {e}", file=sys.stderr)
+        print(f" [ERROR] 데이터 전송 실패: {e}", file=sys.stderr)
 
 
 def recv_int(ser, timeout_s=30):
@@ -61,7 +61,7 @@ def recv_int(ser, timeout_s=30):
             else:
                 time.sleep(0.01)
         except serial.SerialException as e:
-            print(f"❌ [ERROR] 데이터 수신 중 예외 발생: {e}", file=sys.stderr)
+            print(f" [ERROR] 데이터 수신 중 예외 발생: {e}", file=sys.stderr)
             time.sleep(0.1) # 잠시 대기 후 재시도
     
     print(f" [ARDUINO] {timeout_s}초 내에 데이터를 수신하지 못했습니다 (Timeout).", file=sys.stderr)
@@ -122,20 +122,20 @@ def opening_with_button(survey_age, ser, video_path=r"C:\Artech5\Image_Box\openi
                 print("[VLC] 영상이 자연스럽게 종료되었습니다. 다시 재생합니다.")
 
         except FileNotFoundError:
-            print("❌ [ERROR] VLC를 찾을 수 없습니다. 경로를 확인하세요: C:\\Program Files\\VideoLAN\\VLC\\vlc.exe", file=sys.stderr)
+            print(" [ERROR] VLC를 찾을 수 없습니다. 경로를 확인하세요: C:\\Program Files\\VideoLAN\\VLC\\vlc.exe", file=sys.stderr)
             button_pressed_event.set() # 오류 발생 시 루프 중단
             break
         except Exception as e:
-            print(f"❌ [ERROR] VLC 재생 중 오류 발생: {e}", file=sys.stderr)
+            print(f" [ERROR] VLC 재생 중 오류 발생: {e}", file=sys.stderr)
             button_pressed_event.set() # 오류 발생 시 루프 중단
             break
 
     listener_thread.join(timeout=0.5) 
     final_target_age = result_container[0]
     if final_target_age != survey_age:
-        print(f"✅ [SERVER] 최종 나이대가 '{final_target_age}'(으)로 변경되었습니다.")
+        print(f" [SERVER] 최종 나이대가 '{final_target_age}'(으)로 변경되었습니다.")
     else:
-        print(f"✅ [SERVER] 최종 나이대가 초기값 '{survey_age}'(으)로 유지되었습니다.")
+        print(f" [SERVER] 최종 나이대가 초기값 '{survey_age}'(으)로 유지되었습니다.")
     return final_target_age
 
 
@@ -173,9 +173,9 @@ def ending_with_button(ser, video_path=r"C:\Artech5\Image_Box\Emergency.mp4"):
                             vlc_proc.terminate()
                         break
             if not is_end_signal_received:
-                print("❌ [SERVER] 아두이노 종료 신호(100) 대기 시간 초과.")
+                print(" [SERVER] 아두이노 종료 신호(100) 대기 시간 초과.")
         except Exception as e:
-            print(f"❌ [SERVER] 엔딩 리스너 중 에러 발생: {e}", file=sys.stderr)
+            print(f" [SERVER] 엔딩 리스너 중 에러 발생: {e}", file=sys.stderr)
 
     listener = threading.Thread(target=end_listener, daemon=True)
     listener.start()
@@ -227,7 +227,7 @@ def run_sequence_1():
                 is_arduino_ready = True
                 break
             elif not line:
-                print("❌ [ARDUINO] 'start' 신호 대기 시간 초과.")
+                print(" [ARDUINO] 'start' 신호 대기 시간 초과.")
                 break
         
         if not is_arduino_ready:
@@ -243,7 +243,7 @@ def run_sequence_1():
 
         return {"target_age": target_age, "gender": survey_result.get("gender"), "theme": survey_result.get("theme"), "name": survey_result.get("name")}
     except serial.SerialException as e:
-        print(f"❌ [ARDUINO] 에러: 포트 {port}를 열 수 없습니다. {e}")
+        print(f" [ARDUINO] 에러: 포트 {port}를 열 수 없습니다. {e}")
         return None
     finally:
         if ser and ser.is_open:
@@ -269,12 +269,12 @@ def run_artech5():
         # --- 1단계: 사용자 정보 및 얼굴 캡처 ---
         sequence_1_result = run_sequence_1()
         if not sequence_1_result:
-            print("❌ [SERVER] 시퀀스 1 실행에 실패하여 전체 프로그램을 종료합니다.")
+            print(" [SERVER] 시퀀스 1 실행에 실패하여 전체 프로그램을 종료합니다.")
             return
 
         face1 = r"C:\ARTECH5\Image_Box\image1\face_1.jpg"
         if not face1:
-            print("❌ [SERVER] 얼굴 캡처에 실패하여 시퀀스를 중단합니다.")
+            print(" [SERVER] 얼굴 캡처에 실패하여 시퀀스를 중단합니다.")
             return
         
         # --- 2단계: 블랙스크린을 배경으로 AI 시퀀스 진행 ---
@@ -346,9 +346,9 @@ def run_artech5():
                 player.stop()
             
         except serial.SerialException as e:
-            print(f"❌ [ARDUINO] 시퀀스 2 에러: 포트 {port}를 열 수 없습니다. {e}")
+            print(f" [ARDUINO] 시퀀스 2 에러: 포트 {port}를 열 수 없습니다. {e}")
         except Exception as e:
-            print(f"❌ [SERVER] 시퀀스 2 실행 중 에러 발생: {e}")
+            print(f" [SERVER] 시퀀스 2 실행 중 에러 발생: {e}")
         finally:
             if ser and ser.is_open:
                 ser.close()
@@ -367,6 +367,7 @@ def run_artech5():
 
 if __name__ == "__main__":
     run_artech5()
+
 
 
 
